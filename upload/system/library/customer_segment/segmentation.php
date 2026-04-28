@@ -132,13 +132,16 @@ class Segmentation
                 $actual_val = $this->getInactiveDays($customer);
                 break;
             case 'has_category':
-                $actual_val = $this->hasOrderedCategory($customer['customer_id'], $val);
+                $timeframe = isset($condition['timeframe']) ? $condition['timeframe'] : null;
+                $actual_val = $this->hasOrderedCategory($customer['customer_id'], $val, $timeframe);
                 break;
             case 'has_product':
-                $actual_val = $this->hasOrderedProduct($customer['customer_id'], $val);
+                $timeframe = isset($condition['timeframe']) ? $condition['timeframe'] : null;
+                $actual_val = $this->hasOrderedProduct($customer['customer_id'], $val, $timeframe);
                 break;
             case 'has_coupon':
-                $actual_val = $this->hasUsedCoupon($customer['customer_id'], $val);
+                $timeframe = isset($condition['timeframe']) ? $condition['timeframe'] : null;
+                $actual_val = $this->hasUsedCoupon($customer['customer_id'], $val, $timeframe);
                 break;
             case 'age':
                 $actual_val = $this->getCustomerAge($customer);
@@ -274,23 +277,26 @@ class Segmentation
         return $last_days;
     }
 
-    private function hasOrderedCategory($customer_id, $category_id)
+    private function hasOrderedCategory($customer_id, $category_id, $timeframe = null)
     {
-        $sql = "SELECT op.order_product_id FROM `" . DB_PREFIX . "order` o JOIN `" . DB_PREFIX . "order_product` op ON (o.order_id = op.order_id) JOIN `" . DB_PREFIX . "product_to_category` p2c ON (op.product_id = p2c.product_id) WHERE o.customer_id = '" . (int) $customer_id . "' AND o.order_status_id > 0 AND p2c.category_id = '" . (int) $category_id . "' LIMIT 1";
+        $tf_clause = $this->buildTimeframeClause($timeframe, 'o.date_added');
+        $sql = "SELECT op.order_product_id FROM `" . DB_PREFIX . "order` o JOIN `" . DB_PREFIX . "order_product` op ON (o.order_id = op.order_id) JOIN `" . DB_PREFIX . "product_to_category` p2c ON (op.product_id = p2c.product_id) WHERE o.customer_id = '" . (int) $customer_id . "' AND o.order_status_id > 0 AND p2c.category_id = '" . (int) $category_id . "'" . $tf_clause . " LIMIT 1";
         $query = $this->db->query($sql);
         return $query->num_rows > 0;
     }
 
-    private function hasOrderedProduct($customer_id, $product_id)
+    private function hasOrderedProduct($customer_id, $product_id, $timeframe = null)
     {
-        $sql = "SELECT op.order_product_id FROM `" . DB_PREFIX . "order` o JOIN `" . DB_PREFIX . "order_product` op ON (o.order_id = op.order_id) WHERE o.customer_id = '" . (int) $customer_id . "' AND o.order_status_id > 0 AND op.product_id = '" . (int) $product_id . "' LIMIT 1";
+        $tf_clause = $this->buildTimeframeClause($timeframe, 'o.date_added');
+        $sql = "SELECT op.order_product_id FROM `" . DB_PREFIX . "order` o JOIN `" . DB_PREFIX . "order_product` op ON (o.order_id = op.order_id) WHERE o.customer_id = '" . (int) $customer_id . "' AND o.order_status_id > 0 AND op.product_id = '" . (int) $product_id . "'" . $tf_clause . " LIMIT 1";
         $query = $this->db->query($sql);
         return $query->num_rows > 0;
     }
 
-    private function hasUsedCoupon($customer_id, $coupon_code)
+    private function hasUsedCoupon($customer_id, $coupon_code, $timeframe = null)
     {
-        $sql = "SELECT order_id FROM `" . DB_PREFIX . "order_total` WHERE code = 'coupon' AND title LIKE '%" . $this->db->escape($coupon_code) . "%' AND order_id IN (SELECT order_id FROM `" . DB_PREFIX . "order` WHERE customer_id = '" . (int) $customer_id . "' AND order_status_id > 0) LIMIT 1";
+        $tf_clause = $this->buildTimeframeClause($timeframe, 'o.date_added');
+        $sql = "SELECT ot.order_id FROM `" . DB_PREFIX . "order_total` ot JOIN `" . DB_PREFIX . "order` o ON (ot.order_id = o.order_id) WHERE ot.code = 'coupon' AND ot.title LIKE '%" . $this->db->escape($coupon_code) . "%' AND o.customer_id = '" . (int) $customer_id . "' AND o.order_status_id > 0" . $tf_clause . " LIMIT 1";
         $query = $this->db->query($sql);
         return $query->num_rows > 0;
     }
