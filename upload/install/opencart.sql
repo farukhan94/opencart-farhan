@@ -1,3 +1,6 @@
+-- Disable strict mode for compatibility with old OpenCart SQL
+SET SESSION sql_mode = '';
+
 -- -----------------------------------------------------------
 
 --
