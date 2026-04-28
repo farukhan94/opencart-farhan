@@ -47,13 +47,7 @@ The project is automatically deployed using GitHub Actions to a VPS.
 - **Customer Account (Sample)**:
   - **Email**: `customer@opencart.com`
   - **Password**: `opencart`
-- **Database (phpMyAdmin)**: [http://79.143.187.33:8080/](http://79.143.187.33:8080/)
-  - **Username**: `root`
-  - **Password**: `opencart`
 
-### Server Access (SSH)
-- **Command**: `ssh deployer@79.143.187.33`
-- **Password**: `Opencart@123`
 
 ### GitHub Repository
 - **URL**: [https://github.com/farukhan94/opencart-farhan](https://github.com/farukhan94/opencart-farhan)
