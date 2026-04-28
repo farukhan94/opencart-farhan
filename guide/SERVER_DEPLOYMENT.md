@@ -66,8 +66,10 @@ This step is mandatory for the first deployment.
 chmod -R 777 upload/system/storage upload/image
 chmod 0777 upload/config.php upload/admin/config.php
 
-# 2. Fix the SQL syntax in the install file
+# 2. Fix the SQL syntax and invalid dates
 sed -i 's/^-----------------------------------------------------------/-- -----------------------------------------------------------/g' upload/install/opencart.sql
+sed -i "s/'0000-00-00'/'2000-01-01'/g" upload/install/opencart.sql
+sed -i "s/'0000-00-00 00:00:00'/'2000-01-01 00:00:00'/g" upload/install/opencart.sql
 
 # 3. Import the database schema (after containers are running)
 # Run step 6 first, then run this command:
