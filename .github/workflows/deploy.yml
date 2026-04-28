@@ -20,7 +20,15 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /var/www/projects/opencart-farhan
-            git pull origin main
+            
+            # Clean up logs and untracked files that cause "Abort" conflicts
+            find upload/system/storage/logs -type f -not -name 'index.html' -delete
+            
+            # Force the update even if there are conflicts with config files
+            git fetch origin main
+            git stash
+            git reset --hard origin/main
+            git stash pop || true
             
             # Delete OpenCart Modification and System Cache to force use of new files
             find upload/system/storage/modification -type f -not -name 'index.html' -delete
