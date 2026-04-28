@@ -1,0 +1,82 @@
+<div class="customer-segment-slider">
+  {% for slider in sliders %}
+  <div style="margin-bottom: 40px; position: relative;">
+    <h3 style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">{{ slider.name }}</h3>
+    
+    <div class="swiper-viewport">
+      <div id="segment-slider-{{ slider.slider_id }}" class="swiper-container" style="padding-bottom: 30px;">
+        <div class="swiper-wrapper">
+          {% for product in slider.products %}
+          <div class="swiper-slide" style="padding: 5px;">
+            <div class="product-thumb transition" style="border: 1px solid #e5e5e5; padding: 15px; background: #fff; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 160px; overflow: hidden; display: block; width: 100%;">
+               <div style="display: flex; align-items: center; gap: 20px;">
+                  <div style="flex: 0 0 100px;">
+                    <a href="{{ product.href }}"><img src="{{ product.thumb }}" alt="{{ product.name }}" title="{{ product.name }}" class="img-responsive" style="max-width: 100%; height: auto;" /></a>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 15px; font-weight: 600; color: #23a1d1;"><a href="{{ product.href }}">{{ product.name }}</a></h4>
+                    <p style="font-size: 12px; color: #666; margin-bottom: 10px; line-height: 1.4; max-height: 3.2em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ product.description }}</p>
+                    {% if product.price %}
+                    <p class="price" style="margin: 0; font-size: 16px; font-weight: 700; color: #333;">
+                      {% if not product.special %}
+                      {{ product.price }}
+                      {% else %}
+                      <span class="price-new">{{ product.special }}</span> <span class="price-old" style="color: #999; font-weight: normal; font-size: 13px; text-decoration: line-through; margin-left: 8px;">{{ product.price }}</span>
+                      {% endif %}
+                    </p>
+                    {% endif %}
+                  </div>
+               </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="swiper-pagination paging-{{ slider.slider_id }}"></div>
+      <div class="swiper-pager">
+        <div class="swiper-button-next next-{{ slider.slider_id }}"></div>
+        <div class="swiper-button-prev prev-{{ slider.slider_id }}"></div>
+      </div>
+    </div>
+  </div>
+  <script type="text/javascript"><!--
+  $('#segment-slider-{{ slider.slider_id }}').swiper({
+    mode: 'horizontal',
+    slidesPerView: 3.75,
+    centeredSlides: true,
+    pagination: '.paging-{{ slider.slider_id }}',
+    paginationClickable: true,
+    nextButton: '.next-{{ slider.slider_id }}',
+    prevButton: '.prev-{{ slider.slider_id }}',
+    autoplay: 3000,
+    loop: true,
+    spaceBetween: 10,
+    autoplayDisableOnInteraction: false,
+    breakpoints: {
+        768: { slidesPerView: 2.75 },
+        1200: { slidesPerView: 3.75 }
+    }
+  });
+  --></script>
+  {% endfor %}
+</div>
+<style>
+.customer-segment-slider .swiper-viewport {
+    position: relative;
+}
+.customer-segment-slider .swiper-button-next,
+.customer-segment-slider .swiper-button-prev {
+    background: rgba(0,0,0,0.1);
+    color: #fff;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    border-radius: 50%;
+    transition: all 0.3s;
+}
+.customer-segment-slider .swiper-button-next:hover,
+.customer-segment-slider .swiper-button-prev:hover {
+    background: rgba(0,0,0,0.6);
+}
+</style>

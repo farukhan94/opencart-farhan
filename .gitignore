@@ -1,0 +1,30 @@
+# IDEs
+.idea/
+.vscode/
+
+# Ignore Docker DB persistence folder if mounted locally
+mysql-data/
+
+# Mac
+.DS_Store
+
+# OpenCart specific transient data
+system/storage/cache/*
+!system/storage/cache/index.html
+system/storage/logs/*
+!system/storage/logs/index.html
+system/storage/session/*
+!system/storage/session/index.html
+system/storage/upload/*
+!system/storage/upload/index.html
+system/storage/modification/*
+!system/storage/modification/index.html
+
+# Generated configuration files
+# (Uncomment below if config.php is strictly environment dependent)
+# config.php
+# admin/config.php
+
+# Third party dependencies
+vendor/
+node_modules/

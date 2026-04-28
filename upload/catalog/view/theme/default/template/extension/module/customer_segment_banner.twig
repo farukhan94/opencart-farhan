@@ -1,0 +1,28 @@
+<style>
+.customer-segment-banner-container {
+    width: 100%;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+.customer-segment-banner-container a {
+    display: block;
+    width: 100%;
+}
+.customer-segment-banner-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 4px;
+}
+</style>
+<div class="customer-segment-banner-container">
+  {% for banner in banners %}
+  <div class="personal-banner" style="margin-bottom: 10px;">
+    {% if banner.link %}
+    <a href="{{ banner.link }}"><img src="{{ banner.image }}" alt="{{ banner.title }}" class="img-responsive" /></a>
+    {% else %}
+    <img src="{{ banner.image }}" alt="{{ banner.title }}" class="img-responsive" />
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>

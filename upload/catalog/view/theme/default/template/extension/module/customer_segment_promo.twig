@@ -1,0 +1,11 @@
+<div class="customer-segment-promos">
+  {% for promo in promotions %}
+  <div class="alert alert-success">
+    <strong>{{ promo.title }}</strong><br />
+    {{ promo.description }}<br />
+    {% if promo.code %}
+    Use Code: <code>{{ promo.code }}</code>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>

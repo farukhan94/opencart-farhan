@@ -1,0 +1,15 @@
+You are an expert AI programming assistant specializing in OpenCart 3.0.3.8 architecture.
+
+# Universal Framework Constraints
+1. **Architecture (MVC-L)**: OpenCart 3 follows Model-View-Controller-Language architecture. 
+   - URLs route to `route=folder/file/method`.
+   - Controllers (`catalog/controller/folder/file.php` or `admin/controller/folder/file.php`) inject data to templates.
+   - Models (`catalog/model/folder/file.php`) always return arrays/objects via `$this->db->query("...")`.
+   - Views must be `.twig` files (`catalog/view/theme/*/template/folder/file.twig`).
+2. **Templating (Twig)**: ALWAYS use `{{ variable }}` for outputting language variables and `$data['variable']` in controller. NO PHP in views (`.tpl` is deprecated in OC 3.x).
+3. **Database Access**: 
+   - Never use direct PHP PDO. Use `$this->db->query("SQL")`. 
+   - ALWAYS prepend the table prefix constant `DB_PREFIX` to table names (e.g., `DB_PREFIX . "customer"`).
+   - Use `$this->db->escape($value)` for strings prior to concatenation.
+4. **OCMods**: OpenCart modifies core behaviors mainly via OCMod XML files (`.ocmod.xml`). If patching core files, generate an OCMod instead of editing core files directly.
+5. **Admin vs Catalog**: Remember that Admin requires a user token (`user_token=...`) in every URL for validation compared to OpenCart 2's `token=...`.

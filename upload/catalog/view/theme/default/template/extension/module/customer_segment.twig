@@ -1,0 +1,50 @@
+<style>
+.segment-banners {
+    margin-left: -15px;
+    margin-right: -15px;
+    overflow: hidden;
+}
+.banner-item {
+    margin-bottom: 20px;
+}
+.banner-item img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+</style>
+<div class="customer-segment-personalized">
+  {% if banners %}
+    <div class="segment-banners">
+      {% for banner in banners %}
+        <div class="banner-item">
+          <a href="{{ banner.link }}"><img src="{{ banner.image }}" alt="{{ banner.title }}" class="img-responsive" /></a>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if sliders %}
+    <div class="segment-sliders">
+      {% for slider in sliders %}
+        <div class="slider-item">
+          <h3>{{ slider.name }}</h3>
+          <div class="row">
+            {% for product in slider.products %}
+              <div class="col-lg-3 col-md-3 col-sm-6 col-xs-12">
+                <div class="product-thumb transition">
+                  <div class="image"><a href="{{ product.href }}"><img src="{{ product.thumb }}" alt="{{ product.name }}" title="{{ product.name }}" class="img-responsive" /></a></div>
+                  <div class="caption">
+                    <h4><a href="{{ product.href }}">{{ product.name }}</a></h4>
+                    <p>{{ product.description }}</p>
+                    <p class="price">{{ product.price }}</p>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
