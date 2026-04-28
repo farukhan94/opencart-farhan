@@ -780,14 +780,80 @@ class ControllerExtensionModuleCustomerSegment extends Controller
         $this->response->redirect($this->url->link('extension/module/customer_segment', 'user_token=' . $this->session->data['user_token'], true));
     }
 
-    public function getProductInfo()
-    {
+    public function getCategories() {
+        $this->load->model("catalog/category");
+        $results = $this->model_catalog_category->getCategories(array("sort" => "name"));
         $json = array();
+        foreach ($results as $result) {
+            $json[] = array(
+                "category_id" => $result["category_id"],
+                "name"        => $result["name"]
+            );
+        }
+        $this->response->addHeader("Content-Type: application/json");
+        $this->response->setOutput(json_encode($json));
+    }
 
+    public function getCoupons() {
+        $query = $this->db->query("SELECT coupon_id, name, code FROM " . DB_PREFIX . "coupon WHERE status = 1 ORDER BY name ASC");
+        $this->response->addHeader("Content-Type: application/json");
+        $this->response->setOutput(json_encode($query->rows));
+    }
+
+    public function getProducts() {
+        $this->load->model("catalog/product");
+        $results = $this->model_catalog_product->getProducts(array('sort' => 'pd.name'));
+        $json = array();
+        foreach ($results as $result) {
+            $json[] = array(
+                "product_id" => $result["product_id"],
+                "name"        => $result["name"]
+            );
+        }
+        $this->response->addHeader("Content-Type: application/json");
+        $this->response->setOutput(json_encode($json));
+    }
+
+    public function getCountries() {
+        $this->load->model("localisation/country");
+        $results = $this->model_localisation_country->getCountries();
+        $this->response->addHeader("Content-Type: application/json");
+        $this->response->setOutput(json_encode($results));
+    }
+
+    public function getZones() {
+        $this->load->model("localisation/zone");
+        if (isset($this->request->get["country_id"])) {
+            $results = $this->model_localisation_zone->getZonesByCountryId($this->request->get["country_id"]);
+        } else {
+            $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "zone ORDER BY name ASC");
+            $results = $query->rows;
+        }
+        $this->response->addHeader("Content-Type: application/json");
+        $this->response->setOutput(json_encode($results));
+    }
+
+    public function getCategoryInfo() {
+        $json = array();
+        if (isset($this->request->get["ids"])) {
+            $this->load->model("catalog/category");
+            $ids = explode(",", $this->request->get["ids"]);
+            foreach ($ids as $id) {
+                $info = $this->model_catalog_category->getCategory($id);
+                if ($info) {
+                    $json[] = array("category_id" => $info["category_id"], "name" => $info["name"]);
+                }
+            }
+        }
+        $this->response->addHeader("Content-Type: application/json");
+        $this->response->setOutput(json_encode($json));
+    }
+
+    public function getProductInfo() {
+        $json = array();
         if (isset($this->request->get['ids'])) {
             $this->load->model('catalog/product');
             $product_ids = explode(',', $this->request->get['ids']);
-
             foreach ($product_ids as $product_id) {
                 $product_info = $this->model_catalog_product->getProduct($product_id);
 

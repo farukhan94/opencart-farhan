@@ -884,11 +884,11 @@ var conditionFields = [
     { value: 'inactive_days',       label: 'Inactive Days',             type: 'numeric', hasTimeframe: false },
     { value: 'age',                 label: 'Age (Years)',               type: 'numeric', hasTimeframe: false },
     { value: 'gender',              label: 'Gender',                    type: 'gender',  hasTimeframe: false },
-    { value: 'has_category',        label: 'Has Ordered Category ID',   type: 'boolean', hasTimeframe: false },
-    { value: 'has_product',         label: 'Has Ordered Product ID',    type: 'boolean', hasTimeframe: false },
-    { value: 'has_coupon',          label: 'Has Used Coupon Code',      type: 'boolean', hasTimeframe: false },
-    { value: 'country_id',          label: 'Country ID',                type: 'numeric', hasTimeframe: false },
-    { value: 'zone_id',             label: 'Zone ID',                   type: 'numeric', hasTimeframe: false }
+    { value: 'has_category',        label: 'Has Ordered Category',      type: 'category', hasTimeframe: false },
+    { value: 'has_product',         label: 'Has Ordered Product',       type: 'product',  hasTimeframe: false },
+    { value: 'has_coupon',          label: 'Has Used Coupon',           type: 'coupon',   hasTimeframe: false },
+    { value: 'country_id',          label: 'Location: Country',         type: 'country',  hasTimeframe: false },
+    { value: 'zone_id',             label: 'Location: Zone',            type: 'zone',     hasTimeframe: false }
 ];
 
 function getFieldMeta(fieldValue) {
@@ -971,6 +971,74 @@ function buildConditionHTML(condNode) {
             $opSel.find('option[value=">"], option[value=">="], option[value="<"], option[value="<="]').prop('disabled', true);
             $opSel.val('==');
             $valWrapper.append($genderSel);
+        } else if (fieldMeta.type === 'category' || fieldMeta.type === 'product') {
+            $opSel.find('option[value=">"], option[value=">="], option[value="<"], option[value="<="]').prop('disabled', true);
+            if ($opSel.val() !== '==' && $opSel.val() !== '!=') {
+                $opSel.val('==');
+            }
+            
+            var idKey = (fieldMeta.type === 'category') ? 'category_id' : 'product_id';
+            var route = (fieldMeta.type === 'category') ? 'getCategories' : 'getProducts';
+            var $sel = $('<select class="form-control condition-value" style="display:inline-block; width:180px; margin-right:5px;"><option value="">-- Select ' + fieldMeta.type.charAt(0).toUpperCase() + fieldMeta.type.slice(1) + ' --</option></select>');
+            
+            $.ajax({
+                url: 'index.php?route=extension/module/customer_segment/' + route + '&user_token={{ user_token }}',
+                dataType: 'json',
+                success: function(json) {
+                    for (var i = 0; i < json.length; i++) {
+                        $sel.append('<option value="' + json[i][idKey] + '">' + json[i].name + '</option>');
+                    }
+                    $sel.val(currentVal || '');
+                }
+            });
+            
+            $valWrapper.append($sel);
+        } else if (fieldMeta.type === 'country' || fieldMeta.type === 'zone' || fieldMeta.type === 'coupon') {
+            $opSel.find('option[value=">"], option[value=">="], option[value="<"], option[value="<="]').prop('disabled', true);
+             if ($opSel.val() !== '==' && $opSel.val() !== '!=') {
+                $opSel.val('==');
+            }
+            // ... (rest of the logic remains for these types)
+            if (fieldMeta.type === 'country') {
+                var $countrySel = $('<select class="form-control condition-value" style="display:inline-block; width:140px; margin-right:5px;"><option value="">-- Select Country --</option></select>');
+                $.ajax({
+                    url: 'index.php?route=extension/module/customer_segment/getCountries&user_token={{ user_token }}',
+                    dataType: 'json',
+                    success: function(json) {
+                        for (var i = 0; i < json.length; i++) {
+                            $countrySel.append('<option value="' + json[i].country_id + '">' + json[i].name + '</option>');
+                        }
+                        $countrySel.val(currentVal || '');
+                    }
+                });
+                $valWrapper.append($countrySel);
+            } else if (fieldMeta.type === 'zone') {
+                var $zoneSel = $('<select class="form-control condition-value" style="display:inline-block; width:140px; margin-right:5px;"><option value="">-- Select Zone --</option></select>');
+                $.ajax({
+                    url: 'index.php?route=extension/module/customer_segment/getZones&user_token={{ user_token }}',
+                    dataType: 'json',
+                    success: function(json) {
+                        for (var i = 0; i < json.length; i++) {
+                            $zoneSel.append('<option value="' + json[i].zone_id + '">' + json[i].name + '</option>');
+                        }
+                        $zoneSel.val(currentVal || '');
+                    }
+                });
+                $valWrapper.append($zoneSel);
+            } else if (fieldMeta.type === 'coupon') {
+                var $couponSel = $('<select class="form-control condition-value" style="display:inline-block; width:140px; margin-right:5px;"><option value="">-- Select Coupon --</option></select>');
+                $.ajax({
+                    url: 'index.php?route=extension/module/customer_segment/getCoupons&user_token={{ user_token }}',
+                    dataType: 'json',
+                    success: function(json) {
+                        for (var i = 0; i < json.length; i++) {
+                            $couponSel.append('<option value="' + json[i].code + '">' + json[i].name + ' (' + json[i].code + ')</option>');
+                        }
+                        $couponSel.val(currentVal || '');
+                    }
+                });
+                $valWrapper.append($couponSel);
+            }
         } else {
             $opSel.find('option').prop('disabled', false);
             var $textInput = $('<input type="text" class="form-control condition-value" style="display:inline-block; width:140px; margin-right:5px;" />');
