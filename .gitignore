@@ -21,9 +21,8 @@ system/storage/modification/*
 !system/storage/modification/index.html
 
 # Generated configuration files
-# (Uncomment below if config.php is strictly environment dependent)
-# config.php
-# admin/config.php
+config.php
+admin/config.php
 
 # Third party dependencies
 /vendor/
