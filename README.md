@@ -5,9 +5,10 @@ A comprehensive guide to the Customer Segmentation module for OpenCart 3.0.3.8. 
 ## Table of Contents
 - [Customer Segmentation & Targeting Guide](#customer-segmentation--targeting-guide)
   - [Table of Contents](#table-of-contents)
-  - [Quick Start: Docker Setup](#quick-start-docker-setup)
-    - [Prerequisite](#prerequisite)
-    - [Running the Project](#running-the-project)
+  - [Live Demo & Access](#live-demo--access)
+  - [Quick Start: Installation Options](#quick-start-installation-options)
+    - [Option A: Full Sample Project](#option-a-full-sample-project-recommended-for-testing)
+    - [Option B: Standalone Plugin Installation](#option-b-standalone-plugin-installation)
   - [Overview](#overview)
     - [Customer Group Base](#customer-group-base)
     - [Key Features](#key-features)
@@ -27,19 +28,39 @@ A comprehensive guide to the Customer Segmentation module for OpenCart 3.0.3.8. 
     - [Configuration](#configuration)
   - [Frontend & Mobile APIs](#frontend--mobile-apis)
     - [Catalog APIs (Customer-Facing)](#catalog-apis-customer-facing)
-      - [1. Get Personalized Content](#1-get-personalized-content)
-      - [2. Save FCM Token](#2-save-fcm-token)
-      - [3. Trigger Calculation (Cron)](#3-trigger-calculation-cron)
     - [Administrative APIs (Management)](#administrative-apis-management)
-      - [Rule Management](#rule-management)
-      - [Segment & content Management](#segment--content-management)
-      - [Analytics & Utilities](#analytics--utilities)
   - [Developer Information](#developer-information)
     - [Database Schema](#database-schema)
     - [Event Hooks](#event-hooks)
     - [Server Deployment (VPS)](#server-deployment-vps)
 
 ---
+
+## Live Demo & Access
+
+The project is automatically deployed using GitHub Actions to a VPS.
+
+- **Store Frontend**: [http://79.143.187.33/](http://79.143.187.33/)
+- **Admin Panel**: [http://79.143.187.33/admin/](http://79.143.187.33/admin/)
+  - **Username**: `opencart`
+  - **Password**: `opencart`
+- **Customer Account (Sample)**:
+  - **Email**: `customer@opencart.com`
+  - **Password**: `opencart`
+- **Database (phpMyAdmin)**: [http://79.143.187.33:8080/](http://79.143.187.33:8080/)
+  - **Username**: `root`
+  - **Password**: `opencart`
+
+### Server Access (SSH)
+- **Command**: `ssh deployer@79.143.187.33`
+- **Password**: `Opencart@123`
+
+### GitHub Repository
+- **URL**: [https://github.com/farukhan94/opencart-farhan](https://github.com/farukhan94/opencart-farhan)
+- **CI/CD**: The code automatically pushes using GitHub Actions and updates on the server.
+
+---
+
 
 ## Quick Start: Installation Options
 
