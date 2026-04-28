@@ -21,4 +21,6 @@ jobs:
           script: |
             cd /var/www/projects/opencart-farhan
             git pull origin main
+            # Set permissions correctly after pull
+            chmod -R 777 upload/system/storage upload/image
             docker-compose up -d --build --force-recreate --remove-orphans

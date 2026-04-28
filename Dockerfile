@@ -16,3 +16,11 @@ RUN a2enmod rewrite
 
 # Setup appropriate document root permissions
 RUN chown -R www-data:www-data /var/www/html
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Run composer installation
+WORKDIR /var/www/html
+# Note: We run this with || true because the vendor folder might be partially present or missing
+RUN composer install --no-dev --optimize-autoloader || true

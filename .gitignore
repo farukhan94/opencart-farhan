@@ -26,5 +26,6 @@ system/storage/modification/*
 # admin/config.php
 
 # Third party dependencies
-vendor/
+/vendor/
+!upload/system/storage/vendor/
 node_modules/
