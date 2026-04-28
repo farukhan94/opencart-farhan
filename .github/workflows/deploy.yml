@@ -21,6 +21,12 @@ jobs:
           script: |
             cd /var/www/projects/opencart-farhan
             git pull origin main
+            
+            # Delete OpenCart Modification and System Cache to force use of new files
+            find upload/system/storage/modification -type f -not -name 'index.html' -delete
+            find upload/system/storage/cache -type f -not -name 'index.html' -delete
+            
             # Set permissions correctly after pull
-            chmod -R 777 upload/system/storage upload/image
+            chmod -R 777 upload/system/storage upload/image upload/admin/view/stylesheet upload/catalog/view/theme/*/stylesheet
+            
             docker-compose up -d --build --force-recreate --remove-orphans
