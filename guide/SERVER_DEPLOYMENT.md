@@ -38,8 +38,9 @@ apt-get update && apt-get upgrade -y
 curl -fsSL https://get.docker.com -o get-docker.sh
 sh get-docker.sh
 
-# Install Docker Compose
-apt-get install -y docker-compose
+# Install Docker Compose (Ensuring modern version)
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
 ```
 
 ## 4. Setup Project with Git
@@ -53,11 +54,27 @@ su - deployer
 cd /var/www/projects
 
 # Clone the repo
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git opencart_project
-cd opencart_project
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git opencart-farhan
+cd opencart-farhan
 ```
 
-## 5. Launch the Project
+## 5. Fix Permissions & Initialize Database
+This step is mandatory for the first deployment.
+
+```bash
+# 1. Give the web server write access
+chmod -R 777 upload/system/storage upload/image
+chmod 0777 upload/config.php upload/admin/config.php
+
+# 2. Fix the SQL syntax in the install file
+sed -i 's/^-----------------------------------------------------------/-- -----------------------------------------------------------/g' upload/install/opencart.sql
+
+# 3. Import the database schema (after containers are running)
+# Run step 6 first, then run this command:
+docker-compose exec -T db mysql -uroot -popencart opencart < upload/install/opencart.sql
+```
+
+## 6. Launch the Project
 ```bash
 docker-compose up -d --build
 ```
