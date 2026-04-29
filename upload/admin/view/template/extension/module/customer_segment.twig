@@ -35,12 +35,14 @@
           <ul class="nav nav-tabs">
             <li class="active"><a href="#tab-general" data-toggle="tab">{{ tab_general }}</a></li>
             <li><a href="#tab-rules" data-toggle="tab">{{ tab_rules }}</a></li>
-            <li><a href="#tab-analytics" data-toggle="tab"><i class="fa fa-bar-chart"></i> Analytics Dashboard</a></li>
+
             <li><a href="#tab-manual" data-toggle="tab">{{ tab_manual }}</a></li>
             <li><a href="#tab-logs" data-toggle="tab">{{ tab_logs }}</a></li>
             <li><a href="#tab-banners" data-toggle="tab"><i class="fa fa-image"></i> Banners</a></li>
             <li><a href="#tab-sliders" data-toggle="tab"><i class="fa fa-sliders"></i> Sliders</a></li>
             <li><a href="#tab-promotions" data-toggle="tab"><i class="fa fa-tag"></i> Promotions</a></li>
+            <li><a href="#tab-restricted" data-toggle="tab"><i class="fa fa-lock"></i> Restricted Content</a></li>
+            <li><a href="#tab-combos" data-toggle="tab"><i class="fa fa-cubes"></i> Special Combos</a></li>
           </ul>
 
           <div class="tab-content">
@@ -148,21 +150,7 @@
               </div>
             </div>
 
-            <div class="tab-pane" id="tab-analytics">
-               <div class="row">
-                 {% for stat in analytics %}
-                 <div class="col-lg-3 col-md-3 col-sm-6">
-                   <div class="tile tile-primary">
-                     <div class="tile-heading">{{ stat.name }}</div>
-                     <div class="tile-body"><i class="fa fa-users"></i> <h2 class="pull-right">{{ stat.total }}</h2></div>
-                   </div>
-                 </div>
-                 {% endfor %}
-                 {% if not analytics %}
-                   <div class="col-sm-12 text-center text-muted"><p>No customers assigned to any tracking groups.</p></div>
-                 {% endif %}
-               </div>
-            </div>
+
 
 
 
@@ -324,8 +312,40 @@
               </div>
               <div class="table-responsive">
                 <table class="table table-bordered table-hover">
-                  <thead><tr><td>ID</td><td>Group</td><td>Title</td><td>Coupon Code</td><td>Status</td><td class="text-right">Action</td></tr></thead>
+                  <thead><tr><td>ID</td><td>Group(s)</td><td>Title</td><td>Type</td><td>Status</td><td class="text-right">Action</td></tr></thead>
                   <tbody id="promo-list"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- ===== RESTRICTED CONTENT TAB ===== -->
+            <div class="tab-pane" id="tab-restricted">
+              <div class="well" style="margin-top:10px;">
+                <div class="row">
+                  <div class="col-sm-8"><p class="text-info"><i class="fa fa-info-circle"></i> Items listed here will <strong>ONLY</strong> be visible to members of the selected groups. Others will not see them in search or categories.</p></div>
+                  <div class="col-sm-4 text-right"><button type="button" onclick="openRestrictionModal();" class="btn btn-primary"><i class="fa fa-plus"></i> Add Restriction</button></div>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                  <thead><tr><td>Type</td><td>Item Name</td><td>Visible To Groups</td><td class="text-right">Action</td></tr></thead>
+                  <tbody id="restricted-list"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- ===== COMBOS TAB ===== -->
+            <div class="tab-pane" id="tab-combos">
+              <div class="well" style="margin-top:10px;">
+                <div class="row">
+                  <div class="col-sm-8"><p class="text-info"><i class="fa fa-info-circle"></i> Create special bundle deals for specific user groups.</p></div>
+                  <div class="col-sm-4 text-right"><button type="button" onclick="openComboModal(0);" class="btn btn-primary"><i class="fa fa-plus"></i> Add Combo Deal</button></div>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                  <thead><tr><td>ID</td><td>Name</td><td>Groups</td><td>Discount</td><td>Status</td><td class="text-right">Action</td></tr></thead>
+                  <tbody id="combo-list"></tbody>
                 </table>
               </div>
             </div>
@@ -345,7 +365,14 @@
     <div class="modal-body">
       <form id="form-banner" class="form-horizontal">
         <input type="hidden" id="banner-id" name="banner_id" value="" />
-        <div class="form-group"><label class="col-sm-3 control-label">Group</label><div class="col-sm-9"><select name="customer_group_id" id="banner-group" class="form-control">{% for group in customer_groups %}<option value="{{ group.customer_group_id }}">{{ group.name }}</option>{% endfor %}</select></div></div>
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Target Groups</label>
+          <div class="col-sm-9">
+            <input type="text" name="group_name" value="" placeholder="Search groups..." id="input-banner-group" class="form-control" />
+            <div id="banner-group-list" class="well well-sm" style="height: 100px; overflow: auto; margin-top:10px;"></div>
+            <input type="hidden" name="group_ids" value="" id="banner-group-ids" />
+          </div>
+        </div>
         <div class="form-group"><label class="col-sm-3 control-label">Title</label><div class="col-sm-9"><input type="text" name="title" id="banner-title" class="form-control" /></div></div>
         <div class="form-group">
           <label class="col-sm-3 control-label">Banner Image<br/><small class="text-muted">Recommended: 1140x380 px</small></label>
@@ -369,7 +396,14 @@
     <div class="modal-body">
       <form id="form-slider" class="form-horizontal">
         <input type="hidden" id="slider-id" name="slider_id" value="" />
-        <div class="form-group"><label class="col-sm-3 control-label">Group</label><div class="col-sm-9"><select name="customer_group_id" id="slider-group" class="form-control">{% for group in customer_groups %}<option value="{{ group.customer_group_id }}">{{ group.name }}</option>{% endfor %}</select></div></div>
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Target Groups</label>
+          <div class="col-sm-9">
+            <input type="text" name="group_name" value="" placeholder="Search groups..." id="input-slider-group" class="form-control" />
+            <div id="slider-group-list" class="well well-sm" style="height: 100px; overflow: auto; margin-top:10px;"></div>
+            <input type="hidden" name="group_ids" value="" id="slider-group-ids" />
+          </div>
+        </div>
         <div class="form-group"><label class="col-sm-3 control-label">Name</label><div class="col-sm-9"><input type="text" name="name" id="slider-name" class="form-control" /></div></div>
         <div class="form-group">
           <label class="col-sm-3 control-label">Products</label>
@@ -394,14 +428,194 @@
     <div class="modal-body">
       <form id="form-promo" class="form-horizontal">
         <input type="hidden" id="promo-id" name="promotion_id" value="" />
-        <div class="form-group"><label class="col-sm-3 control-label">Group</label><div class="col-sm-9"><select name="customer_group_id" id="promo-group" class="form-control">{% for group in customer_groups %}<option value="{{ group.customer_group_id }}">{{ group.name }}</option>{% endfor %}</select></div></div>
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Target Groups</label>
+          <div class="col-sm-9">
+            <input type="text" name="group_name" value="" placeholder="Search groups..." id="input-promo-group" class="form-control" />
+            <div id="promo-group-list" class="well well-sm" style="height: 100px; overflow: auto; margin-top:10px;"></div>
+            <input type="hidden" name="group_ids" value="" id="promo-group-ids" />
+          </div>
+        </div>
         <div class="form-group"><label class="col-sm-3 control-label">Title</label><div class="col-sm-9"><input type="text" name="title" id="promo-title" class="form-control" /></div></div>
-        <div class="form-group"><label class="col-sm-3 control-label">Description</label><div class="col-sm-9"><textarea name="description" id="promo-desc" class="form-control" rows="3"></textarea></div></div>
-        <div class="form-group"><label class="col-sm-3 control-label">Coupon Code</label><div class="col-sm-9"><input type="text" name="code" id="promo-code" class="form-control" /></div></div>
+        <div class="form-group"><label class="col-sm-3 control-label">Description</label><div class="col-sm-9"><textarea name="description" id="promo-desc" class="form-control" rows="2"></textarea></div></div>
+        
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Type</label>
+          <div class="col-sm-9">
+            <select name="type" id="promo-type" class="form-control" onchange="togglePromoType();">
+              <option value="banner">Banner Only</option>
+              <option value="coupon">Auto-Generated Coupon</option>
+              <option value="cart_discount">Automated Checkout Discount</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Coupon Settings -->
+        <div id="promo-coupon-settings" style="display:none;">
+           <div class="form-group">
+             <label class="col-sm-3 control-label">Coupon Basis</label>
+             <div class="col-sm-9">
+               <select name="coupon_basis_id" id="promo-coupon-basis" class="form-control">
+                  <!-- Loaded by AJAX -->
+               </select>
+               <div class="help-block">New unique coupons will be cloned from this template coupon.</div>
+             </div>
+           </div>
+        </div>
+
+        <!-- Cart Discount Settings -->
+        <div id="promo-discount-settings" style="display:none;">
+           <div class="form-group">
+             <label class="col-sm-3 control-label">Discount</label>
+             <div class="col-sm-5">
+               <input type="text" name="discount_value" id="promo-discount-value" class="form-control" placeholder="Value" />
+             </div>
+             <div class="col-sm-4">
+               <select name="discount_type" id="promo-discount-type" class="form-control">
+                 <option value="percent">Percentage (%)</option>
+                 <option value="fixed">Fixed Amount</option>
+               </select>
+             </div>
+           </div>
+        </div>
+
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Scope</label>
+          <div class="col-sm-9">
+            <select name="scope" id="promo-scope" class="form-control" onchange="togglePromoScope();">
+              <option value="all">All Products</option>
+              <option value="specific_products">Specific Products</option>
+              <option value="specific_categories">Specific Categories</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="promo-scope-products" style="display:none;">
+          <div class="form-group"><label class="col-sm-3 control-label">Products</label><div class="col-sm-9">
+            <input type="text" name="product_search" placeholder="Search products..." class="form-control" id="promo-product-search" />
+            <div id="promo-product-list" class="well well-sm" style="height: 100px; overflow: auto; margin-top:5px;"></div>
+            <input type="hidden" name="product_ids" id="promo-product-ids" />
+          </div></div>
+        </div>
+
+        <div id="promo-scope-categories" style="display:none;">
+           <div class="form-group"><label class="col-sm-3 control-label">Categories</label><div class="col-sm-9">
+            <input type="text" name="category_name" value="" placeholder="Search categories..." id="input-promo-category" class="form-control" />
+            <div id="promo-category-list" class="well well-sm" style="height: 100px; overflow: auto; margin-top:10px;"></div>
+            <input type="hidden" name="category_ids" value="" id="promo-category-ids" />
+          </div></div>
+        </div>
+
         <div class="form-group"><label class="col-sm-3 control-label">Status</label><div class="col-sm-9"><select name="status" id="promo-status" class="form-control"><option value="1">Enabled</option><option value="0">Disabled</option></select></div></div>
       </form>
     </div>
+<!-- Promotion Modal Footer -->
     <div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal">Close</button><button type="button" class="btn btn-primary" onclick="savePromo();">Save</button></div>
+  </div></div>
+</div>
+
+<!-- Restriction Modal -->
+<div class="modal fade" id="modal-restriction" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document"><div class="modal-content">
+    <div class="modal-header"><button type="button" class="close" data-dismiss="modal">&times;</button><h4 class="modal-title">Secret Content Restriction</h4></div>
+    <div class="modal-body">
+      <form id="form-restriction" class="form-horizontal">
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Type</label>
+          <div class="col-sm-9">
+            <select name="item_type" id="restriction-type" class="form-control">
+              <option value="product">Secret Product</option>
+              <option value="category">Secret Category</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Item</label>
+          <div class="col-sm-9">
+            <input type="text" id="restriction-item-search" placeholder="Search..." class="form-control" />
+            <div id="restriction-item-name" style="margin-top:5px; font-weight:bold;"></div>
+            <input type="hidden" name="item_id" id="restriction-item-id" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Visible To Groups</label>
+          <div class="col-sm-9">
+            <input type="text" name="group_name" value="" placeholder="Search groups..." id="input-restrict-group" class="form-control" />
+            <div id="restrict-group-list" class="well well-sm" style="height: 100px; overflow: auto; margin-top:10px;"></div>
+            <input type="hidden" name="group_ids" value="" id="restrict-group-ids" />
+            <small class="help-block">Only members of these groups will see this content.</small>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal">Close</button><button type="button" class="btn btn-primary" onclick="saveRestriction();">Save</button></div>
+  </div></div>
+</div>
+
+<!-- Combo Modal -->
+<div class="modal fade" id="modal-combo" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document"><div class="modal-content">
+    <div class="modal-header"><button type="button" class="close" data-dismiss="modal">&times;</button><h4 class="modal-title">Special Combo Deal</h4></div>
+    <div class="modal-body">
+      <form id="form-combo" class="form-horizontal">
+        <input type="hidden" id="combo-id" name="combo_id" value="" />
+        <div class="form-group"><label class="col-sm-3 control-label">Combo Name</label><div class="col-sm-9"><input type="text" name="name" id="combo-name" class="form-control" placeholder="e.g. Buy A + B and get 20% off" /></div></div>
+        
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Product A</label>
+          <div class="col-sm-9">
+            <input type="text" id="combo-product-a-search" placeholder="Search product..." class="form-control" />
+            <div id="combo-product-a-name" style="margin-top:5px; font-weight:bold;"></div>
+            <input type="hidden" name="product_a_id" id="combo-product-a-id" />
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Product B</label>
+          <div class="col-sm-9">
+            <input type="text" id="combo-product-b-search" placeholder="Search product..." class="form-control" />
+            <div id="combo-product-b-name" style="margin-top:5px; font-weight:bold;"></div>
+            <input type="hidden" name="product_b_id" id="combo-product-b-id" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Discount</label>
+          <div class="col-sm-5">
+            <input type="text" name="discount_value" id="combo-discount-value" class="form-control" placeholder="Value" />
+          </div>
+          <div class="col-sm-4">
+            <select name="discount_type" id="combo-discount-type" class="form-control">
+              <option value="percent">Percentage (%)</option>
+              <option value="fixed">Fixed Amount</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Discount Mode</label>
+          <div class="col-sm-9">
+            <select name="discount_mode" id="combo-discount-mode" class="form-control">
+              <option value="bundle">Apply to both (bundle price)</option>
+              <option value="cheapest">Apply to cheapest only</option>
+              <option value="all">Apply to all items of these types</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Target Groups</label>
+          <div class="col-sm-9">
+            <input type="text" name="group_name" value="" placeholder="Search groups..." id="input-combo-group" class="form-control" />
+            <div id="combo-group-list" class="well well-sm" style="height: 100px; overflow: auto; margin-top:10px;"></div>
+            <input type="hidden" name="group_ids" value="" id="combo-group-ids" />
+          </div>
+        </div>
+
+        <div class="form-group"><label class="col-sm-3 control-label">Status</label><div class="col-sm-9"><select name="status" id="combo-status" class="form-control"><option value="1">Enabled</option><option value="0">Disabled</option></select></div></div>
+      </form>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal">Close</button><button type="button" class="btn btn-primary" onclick="saveCombo();">Save</button></div>
   </div></div>
 </div>
 
@@ -568,6 +782,63 @@
 </div>
 
 <script type="text/javascript"><!--
+var localCustomerGroups = [
+  {% for group in customer_groups %}
+  { id: {{ group.customer_group_id }}, name: "{{ group.name|escape('js') }}" },
+  {% endfor %}
+];
+
+function setupGroupAutocomplete(inputId, listId, hiddenName) {
+    $('#' + inputId).autocomplete({
+        'source': function(request, response) {
+            var matches = [];
+            var term = request.toLowerCase();
+            for (var i = 0; i < localCustomerGroups.length; i++) {
+                if (localCustomerGroups[i].name.toLowerCase().indexOf(term) !== -1) {
+                    matches.push({ label: localCustomerGroups[i].name, value: localCustomerGroups[i].id });
+                }
+            }
+            response(matches);
+        },
+        'select': function(item) {
+            $('#' + inputId).val('');
+            $('#' + listId + '-item' + item['value']).remove();
+            $('#' + listId).append('<div id="' + listId + '-item' + item['value'] + '"><i class="fa fa-minus-circle"></i> ' + item['label'] + '<input type="hidden" name="' + hiddenName + '[]" value="' + item['value'] + '" /></div>');
+        }
+    });
+
+    $('#' + listId).delegate('.fa-minus-circle', 'click', function() {
+        $(this).parent().remove();
+    });
+}
+
+$(document).ready(function() {
+    setupGroupAutocomplete('input-banner-group', 'banner-group-list', 'group_ids');
+    setupGroupAutocomplete('input-slider-group', 'slider-group-list', 'group_ids');
+    setupGroupAutocomplete('input-promo-group', 'promo-group-list', 'group_ids');
+    setupGroupAutocomplete('input-restrict-group', 'restrict-group-list', 'group_ids');
+    setupGroupAutocomplete('input-combo-group', 'combo-group-list', 'group_ids');
+    
+    // For Categories in Promotion
+    $('#input-promo-category').autocomplete({
+        'source': function(request, response) {
+            $.ajax({
+                url: 'index.php?route=catalog/category/autocomplete&user_token={{ user_token }}&filter_name=' + encodeURIComponent(request),
+                dataType: 'json',
+                success: function(json) {
+                    response($.map(json, function(item) { return { label: item['name'], value: item['category_id'] } }));
+                }
+            });
+        },
+        'select': function(item) {
+            $('#input-promo-category').val('');
+            $('#promo-category-list-item' + item['value']).remove();
+            $('#promo-category-list').append('<div id="promo-category-list-item' + item['value'] + '"><i class="fa fa-minus-circle"></i> ' + item['label'] + '<input type="hidden" name="category_ids[]" value="' + item['value'] + '" /></div>');
+        }
+    });
+    $('#promo-category-list').delegate('.fa-minus-circle', 'click', function() { $(this).parent().remove(); });
+});
+
 function readFirebaseJsonFile(input) {
     if (input.files && input.files[0]) {
         var file = input.files[0];
@@ -1242,8 +1513,9 @@ function loadBanners(groupId) {
             if (json.length > 0) {
                 for (var i = 0; i < json.length; i++) {
                     var b = json[i];
+                    var groupNames = b.group_ids ? Object.values(b.group_ids).join(', ') : 'All';
                     html += '<tr>';
-                    html += '<td>' + b.banner_id + '</td><td>' + b.customer_group_id + '</td><td>' + b.title + '</td>';
+                    html += '<td>' + b.banner_id + '</td><td>' + groupNames + '</td><td>' + b.title + '</td>';
                     html += '<td>' + (b.thumb ? '<img src="' + b.thumb + '" style="max-height:40px;">' : '') + '</td>';
                     html += '<td><a href="' + b.link + '" target="_blank">' + b.link + '</a></td>';
                     html += '<td><span class="label label-' + (b.status == 1 ? 'success' : 'default') + '">' + (b.status == 1 ? 'Enabled' : 'Disabled') + '</span></td>';
@@ -1259,9 +1531,8 @@ function loadBanners(groupId) {
 
 function openBannerModal(banner_id) {
     $('#form-banner')[0].reset();
+    $('#banner-group-list').empty();
     $('#banner-id').val(banner_id || '');
-    
-    // Reset image manager
     $('#thumb-banner-image img').attr('src', '{{ placeholder }}');
     $('#input-banner-image').val('');
 
@@ -1270,18 +1541,19 @@ function openBannerModal(banner_id) {
             url: 'index.php?route=extension/module/customer_segment/getBanners&user_token={{ user_token }}',
             dataType: 'json',
             success: function(json) {
-                for (var i = 0; i < json.length; i++) {
-                    if (json[i].banner_id == banner_id) {
-                        $('#banner-group').val(json[i].customer_group_id);
-                        $('#banner-title').val(json[i].title);
-                        $('#banner-link').val(json[i].link);
-                        $('#banner-status').val(json[i].status);
-                        
-                        // Set image manager
-                        if (json[i].image) {
-                            $('#input-banner-image').val(json[i].image);
-                            $('#thumb-banner-image img').attr('src', json[i].thumb);
-                        }
+                var b = json.find(x => x.banner_id == banner_id);
+                if (b) {
+                    if (b.group_ids) {
+                        $.each(b.group_ids, function(id, name) {
+                            $('#banner-group-list').append('<div id="banner-group-list-item' + id + '"><i class="fa fa-minus-circle"></i> ' + name + '<input type="hidden" name="group_ids[]" value="' + id + '" /></div>');
+                        });
+                    }
+                    $('#banner-title').val(b.title);
+                    $('#banner-link').val(b.link);
+                    $('#banner-status').val(b.status);
+                    if (b.image) {
+                        $('#input-banner-image').val(b.image);
+                        $('#thumb-banner-image img').attr('src', b.thumb);
                     }
                 }
             }
@@ -1306,9 +1578,6 @@ function deleteBannerRow(id) {
     }
 }
 
-$(document).ready(function() { loadBanners(0); });
-$('#btn-filter-banners').on('click', function() { loadBanners($('#filter-banner-group').val()); });
-
 // ---------------------------------------------------------------
 // SLIDERS JS
 // ---------------------------------------------------------------
@@ -1322,7 +1591,8 @@ function loadSliders(groupId) {
             if (json.length > 0) {
                 for (var i = 0; i < json.length; i++) {
                     var s = json[i];
-                    html += '<tr><td>' + s.slider_id + '</td><td>' + s.customer_group_id + '</td><td>' + s.name + '</td><td>' + s.product_ids + '</td>';
+                    var groupNames = s.group_ids ? Object.values(s.group_ids).join(', ') : 'All';
+                    html += '<tr><td>' + s.slider_id + '</td><td>' + groupNames + '</td><td>' + s.name + '</td><td>' + s.product_ids + '</td>';
                     html += '<td><span class="label label-' + (s.status == 1 ? 'success' : 'default') + '">' + (s.status == 1 ? 'Enabled' : 'Disabled') + '</span></td>';
                     html += '<td class="text-right"><button type="button" onclick="openSliderModal(' + s.slider_id + ');" class="btn btn-primary btn-xs"><i class="fa fa-pencil"></i></button> ';
                     html += '<button type="button" onclick="deleteSliderRow(' + s.slider_id + ');" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i></button></td></tr>';
@@ -1335,6 +1605,7 @@ function loadSliders(groupId) {
 
 function openSliderModal(slider_id) {
     $('#form-slider')[0].reset();
+    $('#slider-group-list').empty();
     $('#slider-product-list').empty();
     $('#slider-id').val(slider_id || '');
     
@@ -1343,24 +1614,25 @@ function openSliderModal(slider_id) {
             url: 'index.php?route=extension/module/customer_segment/getSliders&user_token={{ user_token }}',
             dataType: 'json',
             success: function(json) {
-                for (var i = 0; i < json.length; i++) {
-                    if (json[i].slider_id == slider_id) {
-                        $('#slider-group').val(json[i].customer_group_id);
-                        $('#slider-name').val(json[i].name);
-                        $('#slider-status').val(json[i].status);
-                        
-                        // Populate products
-                        if (json[i].product_ids) {
-                            $.ajax({
-                                url: 'index.php?route=extension/module/customer_segment/getProductInfo&user_token={{ user_token }}&ids=' + json[i].product_ids,
-                                dataType: 'json',
-                                success: function(pJson) {
-                                    for(var j=0; j<pJson.length; j++) {
-                                        $('#slider-product-list').append('<div id="slider-product' + pJson[j].product_id + '"><i class="fa fa-minus-circle"></i> ' + pJson[j].name + '<input type="hidden" name="selected_product[]" value="' + pJson[j].product_id + '" /></div>');
-                                    }
+                var s = json.find(x => x.slider_id == slider_id);
+                if (s) {
+                    if (s.group_ids) {
+                        $.each(s.group_ids, function(id, name) {
+                            $('#slider-group-list').append('<div id="slider-group-list-item' + id + '"><i class="fa fa-minus-circle"></i> ' + name + '<input type="hidden" name="group_ids[]" value="' + id + '" /></div>');
+                        });
+                    }
+                    $('#slider-name').val(s.name);
+                    $('#slider-status').val(s.status);
+                    if (s.product_ids) {
+                        $.ajax({
+                            url: 'index.php?route=extension/module/customer_segment/getProductInfo&user_token={{ user_token }}&ids=' + s.product_ids,
+                            dataType: 'json',
+                            success: function(pJson) {
+                                for(var j=0; j<pJson.length; j++) {
+                                    $('#slider-product-list').append('<div id=\"slider-product' + pJson[j].product_id + '\"><i class=\"fa fa-minus-circle\"></i> ' + pJson[j].name + '<input type=\"hidden\" name=\"selected_product[]\" value=\"' + pJson[j].product_id + '\" /></div>');
                                 }
-                            });
-                        }
+                            }
+                        });
                     }
                 }
             }
@@ -1371,23 +1643,14 @@ function openSliderModal(slider_id) {
 
 function saveSlider() {
     var product_ids = [];
-    $('#slider-product-list input[name="selected_product[]"]').each(function() {
-        product_ids.push($(this).val());
-    });
+    $('#slider-product-list input[name=\"selected_product[]\"]').each(function() { product_ids.push($(this).val()); });
     $('#slider-product-ids').val(product_ids.join(','));
 
     $.ajax({
         url: 'index.php?route=extension/module/customer_segment/saveSlider&user_token={{ user_token }}',
-        type: 'post',
-        data: $('#form-slider').serialize(),
-        dataType: 'json',
+        type: 'post', data: $('#form-slider').serialize(), dataType: 'json',
         success: function(json) {
-            if (json.error) {
-                alert(json.error);
-            } else {
-                $('#modal-slider').modal('hide');
-                loadSliders($('#filter-slider-group').val());
-            }
+            if (json.error) { alert(json.error); } else { $('#modal-slider').modal('hide'); loadSliders($('#filter-slider-group').val()); }
         }
     });
 }
@@ -1396,35 +1659,24 @@ function deleteSliderRow(id) {
     if (confirm('Delete this slider?')) { $.ajax({ url: 'index.php?route=extension/module/customer_segment/deleteSlider&user_token={{ user_token }}&slider_id=' + id, dataType: 'json', success: function() { loadSliders($('#filter-slider-group').val()); } }); }
 }
 
-$(document).ready(function() { loadSliders(0); });
-$('#btn-filter-sliders').on('click', function() { loadSliders($('#filter-slider-group').val()); });
-
-// Autocomplete for Slider Products
 $('#input-slider-product').autocomplete({
     'source': function(request, response) {
         $.ajax({
             url: 'index.php?route=catalog/product/autocomplete&user_token={{ user_token }}&filter_name=' + encodeURIComponent(request),
             dataType: 'json',
             success: function(json) {
-                response($.map(json, function(item) {
-                    return {
-                        label: item['name'],
-                        value: item['product_id']
-                    }
-                }));
+                response($.map(json, function(item) { return { label: item['name'], value: item['product_id'] } }));
             }
         });
     },
     'select': function(item) {
         $('#input-slider-product').val('');
         $('#slider-product' + item['value']).remove();
-        $('#slider-product-list').append('<div id="slider-product' + item['value'] + '"><i class="fa fa-minus-circle"></i> ' + item['label'] + '<input type="hidden" name="selected_product[]" value="' + item['value'] + '" /></div>');
+        $('#slider-product-list').append('<div id=\"slider-product' + item['value'] + '\"><i class=\"fa fa-minus-circle\"></i> ' + item['label'] + '<input type=\"hidden\" name=\"selected_product[]\" value=\"' + item['value'] + '\" /></div>');
     }
 });
 
-$('#slider-product-list').delegate('.fa-minus-circle', 'click', function() {
-    $(this).parent().remove();
-});
+$('#slider-product-list').delegate('.fa-minus-circle', 'click', function() { $(this).parent().remove(); });
 
 // ---------------------------------------------------------------
 // PROMOTIONS JS
@@ -1439,9 +1691,14 @@ function loadPromos(groupId) {
             if (json.length > 0) {
                 for (var i = 0; i < json.length; i++) {
                     var p = json[i];
-                    html += '<tr><td>' + p.promotion_id + '</td><td>' + p.customer_group_id + '</td><td>' + p.title + '</td><td>' + p.code + '</td>';
+                    var groupNames = p.group_ids ? Object.values(p.group_ids).join(', ') : 'All';
+                    html += '<tr><td>' + p.promotion_id + '</td><td>' + groupNames + '</td><td>' + p.title + '</td><td>' + p.type + '</td>';
                     html += '<td><span class="label label-' + (p.status == 1 ? 'success' : 'default') + '">' + (p.status == 1 ? 'Enabled' : 'Disabled') + '</span></td>';
-                    html += '<td class="text-right"><button type="button" onclick="openPromoModal(' + p.promotion_id + ');" class="btn btn-primary btn-xs"><i class="fa fa-pencil"></i></button> ';
+                    html += '<td class="text-right">';
+                    if(p.type == 'coupon') {
+                       html += '<button type="button" onclick="showCouponReport(' + p.promotion_id + ');" class="btn btn-info btn-xs" title="View Generated Coupons"><i class="fa fa-list"></i></button> ';
+                    }
+                    html += '<button type="button" onclick="openPromoModal(' + p.promotion_id + ');" class="btn btn-primary btn-xs"><i class="fa fa-pencil"></i></button> ';
                     html += '<button type="button" onclick="deletePromoRow(' + p.promotion_id + ');" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i></button></td></tr>';
                 }
             } else { html = '<tr><td colspan="6" class="text-center">No promotions found.</td></tr>'; }
@@ -1452,18 +1709,98 @@ function loadPromos(groupId) {
 
 function openPromoModal(promo_id) {
     $('#form-promo')[0].reset();
+    $('#promo-group-list, #promo-category-list').empty();
+    $('#promo-product-list').empty();
     $('#promo-id').val(promo_id || '');
-    if (promo_id) {
-        $.ajax({ url: 'index.php?route=extension/module/customer_segment/getPromotions&user_token={{ user_token }}', dataType: 'json', success: function(json) {
-            for (var i = 0; i < json.length; i++) { if (json[i].promotion_id == promo_id) { $('#promo-group').val(json[i].customer_group_id); $('#promo-title').val(json[i].title); $('#promo-desc').val(json[i].description); $('#promo-code').val(json[i].code); $('#promo-status').val(json[i].status); } }
-        }});
-    }
+    
+    // Load coupons for basis
+    $.ajax({
+        url: 'index.php?route=marketing/coupon/autocomplete&user_token={{ user_token }}',
+        dataType: 'json',
+        success: function(json) {
+            var html = '<option value=\"0\">-- Select Template Coupon --</option>';
+            for(var i=0; i<json.length; i++) {
+                html += '<option value=\"' + json[i].coupon_id + '\">' + json[i].name + ' (' + json[i].code + ')</option>';
+            }
+            $('#promo-coupon-basis').html(html);
+            
+            if (promo_id) {
+                $.ajax({ url: 'index.php?route=extension/module/customer_segment/getPromotions&user_token={{ user_token }}', dataType: 'json', success: function(json) {
+                    var p = json.find(x => x.promotion_id == promo_id);
+                    if (p) {
+                        if (p.group_ids) { $.each(p.group_ids, function(id, name) { $('#promo-group-list').append('<div id="promo-group-list-item' + id + '"><i class="fa fa-minus-circle"></i> ' + name + '<input type="hidden" name="group_ids[]" value="' + id + '" /></div>'); }); }
+                        $('#promo-title').val(p.title);
+                        $('#promo-desc').val(p.description);
+                        $('#promo-type').val(p.type);
+                        $('#promo-status').val(p.status);
+                        $('#promo-scope').val(p.scope);
+                        $('#promo-discount-value').val(p.discount_value);
+                        $('#promo-discount-type').val(p.discount_type);
+                        $('#promo-coupon-basis').val(p.coupon_basis_id);
+                        
+                        if (p.category_ids) {
+                            $.ajax({
+                                url: 'index.php?route=extension/module/customer_segment/getCategoryInfo&user_token={{ user_token }}&ids=' + p.category_ids,
+                                dataType: 'json',
+                                success: function(cJson) {
+                                    for(var j=0; j<cJson.length; j++) {
+                                        $('#promo-category-list').append('<div id="promo-category-list-item' + cJson[j].category_id + '"><i class="fa fa-minus-circle"></i> ' + cJson[j].name + '<input type="hidden" name="category_ids[]" value="' + cJson[j].category_id + '" /></div>');
+                                    }
+                                }
+                            });
+                        }
+                        
+                        if (p.product_ids) {
+                            $.ajax({
+                                url: 'index.php?route=extension/module/customer_segment/getProductInfo&user_token={{ user_token }}&ids=' + p.product_ids,
+                                dataType: 'json',
+                                success: function(pJson) {
+                                    for(var j=0; j<pJson.length; j++) {
+                                        $('#promo-product-list').append('<div id=\"promo-product' + pJson[j].product_id + '\"><i class=\"fa fa-minus-circle\"></i> ' + pJson[j].name + '<input type=\"hidden\" name=\"selected_product[]\" value=\"' + pJson[j].product_id + '\" /></div>');
+                                    }
+                                }
+                            });
+                        }
+                        togglePromoType();
+                        togglePromoScope();
+                    }
+                }});
+            } else {
+                togglePromoType();
+                togglePromoScope();
+            }
+        }
+    });
+
     $('#modal-promo').modal('show');
 }
 
+function togglePromoType() {
+    var type = $('#promo-type').val();
+    $('#promo-coupon-settings').hide();
+    $('#promo-discount-settings').hide();
+    if(type == 'coupon') $('#promo-coupon-settings').show();
+    if(type == 'cart_discount') $('#promo-discount-settings').show();
+}
+
+function togglePromoScope() {
+    var scope = $('#promo-scope').val();
+    $('#promo-scope-products, #promo-scope-categories').hide();
+    if(scope == 'specific_products') $('#promo-scope-products').show();
+    if(scope == 'specific_categories') $('#promo-scope-categories').show();
+}
+
 function savePromo() {
-    $.ajax({ url: 'index.php?route=extension/module/customer_segment/savePromotion&user_token={{ user_token }}', type: 'post', data: $('#form-promo').serialize(), dataType: 'json',
-        success: function(json) { if (json.error) { alert(json.error); } else { $('#modal-promo').modal('hide'); loadPromos($('#filter-promo-group').val()); } }
+    var product_ids = [];
+    $('#promo-product-list input[name=\"selected_product[]\"]').each(function() { product_ids.push($(this).val()); });
+    $('#promo-product-ids').val(product_ids.join(','));
+
+    $.ajax({
+        url: 'index.php?route=extension/module/customer_segment/savePromotion&user_token={{ user_token }}',
+        type: 'post', data: $('#form-promo').serialize(), dataType: 'json',
+        success: function(json) {
+            if (json.error) { alert(json.error); } else { $('#modal-promo').modal('hide'); loadPromos($('#filter-promo-group').val()); }
+        }
     });
 }
 
@@ -1471,7 +1808,201 @@ function deletePromoRow(id) {
     if (confirm('Delete this promotion?')) { $.ajax({ url: 'index.php?route=extension/module/customer_segment/deletePromotion&user_token={{ user_token }}&promotion_id=' + id, dataType: 'json', success: function() { loadPromos($('#filter-promo-group').val()); } }); }
 }
 
-$(document).ready(function() { loadPromos(0); });
+$('#promo-product-search').autocomplete({
+    'source': function(request, response) {
+        $.ajax({
+            url: 'index.php?route=catalog/product/autocomplete&user_token={{ user_token }}&filter_name=' + encodeURIComponent(request),
+            dataType: 'json',
+            success: function(json) { response($.map(json, function(item) { return { label: item['name'], value: item['product_id'] } })); }
+        });
+    },
+    'select': function(item) {
+        $('#promo-product-search').val('');
+        $('#promo-product' + item['value']).remove();
+        $('#promo-product-list').append('<div id=\"promo-product' + item['value'] + '\"><i class=\"fa fa-minus-circle\"></i> ' + item['label'] + '<input type=\"hidden\" name=\"selected_product[]\" value=\"' + item['value'] + '\" /></div>');
+    }
+});
+$('#promo-product-list').delegate('.fa-minus-circle', 'click', function() { $(this).parent().remove(); });
+
+// ---------------------------------------------------------------
+// RESTRICTIONS JS
+// ---------------------------------------------------------------
+function loadRestrictions() {
+    $.ajax({
+        url: 'index.php?route=extension/module/customer_segment/getRestrictions&user_token={{ user_token }}',
+        dataType: 'json',
+        success: function(json) {
+            var html = '';
+            if (json.length > 0) {
+                for (var i = 0; i < json.length; i++) {
+                    var r = json[i];
+                    var groupNames = r.group_ids ? Object.values(r.group_ids).join(', ') : 'None';
+                    html += '<tr><td>' + r.item_type + '</td><td>' + r.name + '</td><td>' + groupNames + '</td>';
+                    html += '<td class="text-right"><button type="button" onclick=\"deleteRestriction(' + r.id + ');\" class=\"btn btn-danger btn-xs\"><i class=\"fa fa-trash\"></i></button></td></tr>';
+                }
+            } else { html = '<tr><td colspan=\"4\" class=\"text-center\">No restrictions defined.</td></tr>'; }
+            $('#restricted-list').html(html);
+        }
+    });
+}
+
+function openRestrictionModal() {
+    $('#form-restriction')[0].reset();
+    $('#restrict-group-list').empty();
+    $('#restriction-item-name').text('');
+    $('#restriction-item-id').val('');
+    $('#modal-restriction').modal('show');
+}
+
+function saveRestriction() {
+    $.ajax({
+        url: 'index.php?route=extension/module/customer_segment/saveRestriction&user_token={{ user_token }}',
+        type: 'post', data: $('#form-restriction').serialize(), dataType: 'json',
+        success: function(json) {
+            if (json.error) { alert(json.error); } else { $('#modal-restriction').modal('hide'); loadRestrictions(); }
+        }
+    });
+}
+
+function deleteRestriction(id) {
+    if (confirm('Delete this restriction?')) {
+        $.ajax({ url: 'index.php?route=extension/module/customer_segment/deleteRestriction&user_token={{ user_token }}&id=' + id, dataType: 'json', success: function() { loadRestrictions(); } });
+    }
+}
+
+$('#restriction-item-search').autocomplete({
+    'source': function(request, response) {
+        var type = $('#restriction-type').val();
+        var url = type == 'product' ? 'index.php?route=catalog/product/autocomplete' : 'index.php?route=catalog/category/autocomplete';
+        $.ajax({
+            url: url + '&user_token={{ user_token }}&filter_name=' + encodeURIComponent(request),
+            dataType: 'json',
+            success: function(json) { response($.map(json, function(item) { return { label: (item['name'] || item['title']), value: (item['product_id'] || item['category_id']) } })); }
+        });
+    },
+    'select': function(item) {
+        $('#restriction-item-search').val('');
+        $('#restriction-item-name').text(item['label']);
+        $('#restriction-item-id').val(item['value']);
+    }
+});
+
+// ---------------------------------------------------------------
+// COMBOS JS
+// ---------------------------------------------------------------
+function loadCombos() {
+    $.ajax({
+        url: 'index.php?route=extension/module/customer_segment/getCombos&user_token={{ user_token }}',
+        dataType: 'json',
+        success: function(json) {
+            var html = '';
+            if (json.length > 0) {
+                for (var i = 0; i < json.length; i++) {
+                    var c = json[i];
+                    var groupNames = c.group_ids ? Object.values(c.group_ids).join(', ') : 'None';
+                    html += '<tr><td>' + c.combo_id + '</td><td>' + c.name + '</td><td>' + groupNames + '</td><td>' + c.discount_value + (c.discount_type=='percent'?'%':' Fixed') + '</td>';
+                    html += '<td><span class=\"label label-' + (c.status == 1 ? 'success' : 'default') + '\">' + (c.status == 1 ? 'Enabled' : 'Disabled') + '</span></td>';
+                    html += '<td class=\"text-right\"><button type=\"button\" onclick=\"openComboModal(' + c.combo_id + ');\" class=\"btn btn-primary btn-xs\"><i class=\"fa fa-pencil\"></i></button> ';
+                    html += '<button type=\"button\" onclick=\"deleteCombo(' + c.combo_id + ');\" class=\"btn btn-danger btn-xs\"><i class=\"fa fa-trash\"></i></button></td></tr>';
+                }
+            } else { html = '<tr><td colspan=\"6\" class=\"text-center\">No combos found.</td></tr>'; }
+            $('#combo-list').html(html);
+        }
+    });
+}
+
+function openComboModal(combo_id) {
+    $('#form-combo')[0].reset();
+    $('#combo-group-list').empty();
+    $('#combo-product-a-name, #combo-product-b-name').text('');
+    $('#combo-product-a-id, #combo-product-b-id').val('');
+    $('#combo-id').val(combo_id || '');
+
+    if (combo_id) {
+        $.ajax({
+            url: 'index.php?route=extension/module/customer_segment/getCombos&user_token={{ user_token }}',
+            dataType: 'json',
+            success: function(json) {
+                var c = json.find(x => x.combo_id == combo_id);
+                if (c) {
+                    $('#combo-name').val(c.name);
+                    $('#combo-discount-value').val(c.discount_value);
+                    $('#combo-discount-type').val(c.discount_type);
+                    $('#combo-discount-mode').val(c.discount_mode);
+                    $('#combo-status').val(c.status);
+                    $('#combo-product-a-id').val(c.product_a_id);
+                    $('#combo-product-b-id').val(c.product_b_id);
+                    if (c.group_ids) { $.each(c.group_ids, function(id, name) { $('#combo-group-list').append('<div id="combo-group-list-item' + id + '"><i class="fa fa-minus-circle"></i> ' + name + '<input type="hidden" name="group_ids[]" value="' + id + '" /></div>'); }); }
+                    
+                    // Fetch product names for labels
+                    $.ajax({
+                        url: 'index.php?route=extension/module/customer_segment/getProductInfo&user_token={{ user_token }}&ids=' + c.product_a_id + ',' + c.product_b_id,
+                        dataType: 'json',
+                        success: function(pJson) {
+                            pJson.forEach(p => {
+                                if(p.product_id == c.product_a_id) $('#combo-product-a-name').text(p.name);
+                                if(p.product_id == c.product_b_id) $('#combo-product-b-name').text(p.name);
+                            });
+                        }
+                    });
+                }
+            }
+        });
+    }
+    $('#modal-combo').modal('show');
+}
+
+function saveCombo() {
+    $.ajax({
+        url: 'index.php?route=extension/module/customer_segment/saveCombo&user_token={{ user_token }}',
+        type: 'post', data: $('#form-combo').serialize(), dataType: 'json',
+        success: function(json) {
+            if (json.error) { alert(json.error); } else { $('#modal-combo').modal('hide'); loadCombos(); }
+        }
+    });
+}
+
+function deleteCombo(id) {
+    if (confirm('Delete this combo?')) {
+        $.ajax({ url: 'index.php?route=extension/module/customer_segment/deleteCombo&user_token={{ user_token }}&combo_id=' + id, dataType: 'json', success: function() { loadCombos(); } });
+    }
+}
+
+$('#combo-product-a-search, #combo-product-b-search').autocomplete({
+    'source': function(request, response) {
+        $.ajax({
+            url: 'index.php?route=catalog/product/autocomplete&user_token={{ user_token }}&filter_name=' + encodeURIComponent(request),
+            dataType: 'json',
+            success: function(json) { response($.map(json, function(item) { return { label: item['name'], value: item['product_id'] } })); }
+        });
+    },
+    'select': function(item) {
+        var id = $(this).attr('id');
+        if(id.indexOf('product-a') != -1) {
+            $('#combo-product-a-search').val('');
+            $('#combo-product-a-name').text(item['label']);
+            $('#combo-product-a-id').val(item['value']);
+        } else {
+            $('#combo-product-b-search').val('');
+            $('#combo-product-b-name').text(item['label']);
+            $('#combo-product-b-id').val(item['value']);
+        }
+    }
+});
+
+// ---------------------------------------------------------------
+// INITIALIZE
+// ---------------------------------------------------------------
+$(document).ready(function() {
+    loadBanners(0);
+    loadSliders(0);
+    loadPromos(0);
+    loadRestrictions();
+    loadCombos();
+});
+
+$('#btn-filter-banners').on('click', function() { loadBanners($('#filter-banner-group').val()); });
+$('#btn-filter-sliders').on('click', function() { loadSliders($('#filter-slider-group').val()); });
 $('#btn-filter-promos').on('click', function() { loadPromos($('#filter-promo-group').val()); });
 
 function openTestModal() {
@@ -1480,9 +2011,7 @@ function openTestModal() {
         dataType: 'json',
         success: function(json) {
             var html = '';
-            for (var i = 0; i < json.length; i++) {
-                html += '<option value="' + json[i]['rule_id'] + '">' + json[i]['name'] + '</option>';
-            }
+            for (var i = 0; i < json.length; i++) { html += '<option value=\"' + json[i]['rule_id'] + '\">' + json[i]['name'] + '</option>'; }
             $('#test-rule-id').html(html);
             $('#test-results-container').hide();
             $('#modal-test').modal('show');
@@ -1497,22 +2026,19 @@ function runRuleTest() {
     
     $.ajax({
         url: 'index.php?route=extension/module/customer_segment/testRule&user_token={{ user_token }}',
-        type: 'post',
-        data: { rule_id: rule_id, customer_id: customer_id },
-        dataType: 'json',
+        type: 'post', data: { rule_id: rule_id, customer_id: customer_id }, dataType: 'json',
         success: function(json) {
             $('#test-results-container').show();
             if (json['error']) {
-                $('#test-results-output').html('<span class="text-danger">' + json['error'] + '</span>');
+                $('#test-results-output').html('<span class=\"text-danger\">' + json['error'] + '</span>');
             } else {
-                var outHtml = json['match'] ? '<span class="label label-success">MATCH - Segment Condition Passed</span><hr>' : '<span class="label label-danger">NO MATCH</span><hr>';
-                if (json['trace']) {
-                    outHtml += json['trace'].join('<br>');
-                }
+                var outHtml = json['match'] ? '<span class=\"label label-success\">MATCH - Segment Condition Passed</span><hr>' : '<span class=\"label label-danger\">NO MATCH</span><hr>';
+                if (json['trace']) { outHtml += json['trace'].join('<br>'); }
                 $('#test-results-output').html(outHtml);
             }
         }
     });
 }
+
 //--></script>
 {{ footer }}

@@ -9,15 +9,16 @@ class ControllerExtensionModuleCustomerSegment extends Controller
 
         $this->load->model('extension/module/customer_segment');
         $this->load->model('tool/image');
+        $this->load->model('catalog/product');
 
         $customer_group_id = ($this->customer->isLogged()) ? $this->customer->getGroupId() : $this->config->get('config_customer_group_id');
 
-        // Banners - resolve images
+        // Banners
         $banners = $this->model_extension_module_customer_segment->getBanners($customer_group_id);
         $data['banners'] = array();
         foreach ($banners as $banner) {
             if ($banner['image'] && is_file(DIR_IMAGE . $banner['image'])) {
-                $image = $this->model_tool_image->resize($banner['image'], 1140, 380); // Standard full-width banner size
+                $image = $this->model_tool_image->resize($banner['image'], 1140, 380);
             } else {
                 $image = '';
             }
@@ -29,8 +30,47 @@ class ControllerExtensionModuleCustomerSegment extends Controller
             );
         }
 
-        $data['sliders'] = $this->model_extension_module_customer_segment->getSliders($customer_group_id);
-        $data['promotions'] = $this->model_extension_module_customer_segment->getPromotions($customer_group_id);
+        // Sliders with product details
+        $sliders = $this->model_extension_module_customer_segment->getSliders($customer_group_id);
+        $data['sliders'] = array();
+        foreach ($sliders as $slider) {
+            $products = array();
+            if ($slider['product_ids']) {
+                $product_ids = explode(',', $slider['product_ids']);
+                foreach ($product_ids as $product_id) {
+                    $product_info = $this->model_catalog_product->getProduct($product_id);
+                    if ($product_info) {
+                        if ($product_info['image']) {
+                            $image = $this->model_tool_image->resize($product_info['image'], 200, 200);
+                        } else {
+                            $image = $this->model_tool_image->resize('placeholder.png', 200, 200);
+                        }
+
+                        if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {
+                            $price = $this->currency->format($this->tax->calculate($product_info['price'], $product_info['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
+                        } else {
+                            $price = false;
+                        }
+
+                        $products[] = array(
+                            'product_id'  => $product_info['product_id'],
+                            'thumb'       => $image,
+                            'name'        => $product_info['name'],
+                            'description' => utf8_substr(strip_tags(html_entity_decode($product_info['description'], ENT_QUOTES, 'UTF-8')), 0, $this->config->get('theme_' . $this->config->get('config_theme') . '_product_description_length')) . '..',
+                            'price'       => $price,
+                            'href'        => $this->url->link('product/product', 'product_id=' . $product_info['product_id'])
+                        );
+                    }
+                }
+            }
+
+            if ($products) {
+                $data['sliders'][] = array(
+                    'name'     => $slider['name'],
+                    'products' => $products
+                );
+            }
+        }
 
         return $this->load->view('extension/module/customer_segment', $data);
     }
@@ -141,16 +181,11 @@ class ControllerExtensionModuleCustomerSegment extends Controller
     {
         $this->response->addHeader('Content-Type: application/json');
 
-        if (!$this->customer->isLogged()) {
-            $this->response->setOutput(json_encode(array('error' => 'Not logged in')));
-            return;
-        }
-
-        $group_id = (int) $this->customer->getGroupId();
+        $group_id = ($this->customer->isLogged()) ? (int)$this->customer->getGroupId() : (int)$this->config->get('config_customer_group_id');
         $this->load->model('extension/module/customer_segment');
         $this->load->model('tool/image');
 
-        $banners = $this->model_extension_module_customer_segment->getBannersForGroup($group_id);
+        $banners = $this->model_extension_module_customer_segment->getBanners($group_id);
         $resolved_banners = array();
         foreach ($banners as $banner) {
             if ($banner['image'] && is_file(DIR_IMAGE . $banner['image'])) {
@@ -169,11 +204,87 @@ class ControllerExtensionModuleCustomerSegment extends Controller
         $data = array(
             'customer_group_id' => $group_id,
             'banners' => $resolved_banners,
-            'sliders' => $this->model_extension_module_customer_segment->getSlidersForGroup($group_id),
-            'promotions' => $this->model_extension_module_customer_segment->getPromotionsForGroup($group_id),
+            'sliders' => $this->model_extension_module_customer_segment->getSliders($group_id),
+            'promotions' => $this->model_extension_module_customer_segment->getPromotions($group_id),
+            'combos' => $this->model_extension_module_customer_segment->getCombosForGroups(array($group_id))
         );
 
         $this->response->setOutput(json_encode($data));
     }
+
+    // ----------------------------------------------------------------
+    // RESTRICTION ENFORCEMENT HOOKS
+    // ----------------------------------------------------------------
+    
+    public function eventCheckProduct(&$route, &$args, &$output)
+    {
+        if (!$this->config->get('module_customer_segment_status')) return;
+        
+        $this->load->model('extension/module/customer_segment');
+        $restrictions = $this->model_extension_module_customer_segment->getRestrictedItems();
+        
+        if (empty($restrictions['product'])) return;
+
+        $customer_group_id = ($this->customer->isLogged()) ? (int)$this->customer->getGroupId() : (int)$this->config->get('config_customer_group_id');
+
+        // getProduct hook
+        if ($route == 'catalog/model/catalog/product/getProduct/after' && !empty($output)) {
+            $product_id = (int)$output['product_id'];
+            if (isset($restrictions['product'][$product_id])) {
+                if (!in_array($customer_group_id, $restrictions['product'][$product_id])) {
+                    $output = false; // Hide product
+                }
+            }
+        }
+
+        // getProducts hook (usually returns array of products)
+        if ($route == 'catalog/model/catalog/product/getProducts/after' && is_array($output)) {
+            foreach ($output as $key => $product) {
+                $product_id = (int)$product['product_id'];
+                if (isset($restrictions['product'][$product_id])) {
+                    if (!in_array($customer_group_id, $restrictions['product'][$product_id])) {
+                        unset($output[$key]);
+                    }
+                }
+            }
+            $output = array_values($output);
+        }
+    }
+
+    public function eventCheckCategory(&$route, &$args, &$output)
+    {
+        if (!$this->config->get('module_customer_segment_status')) return;
+
+        $this->load->model('extension/module/customer_segment');
+        $restrictions = $this->model_extension_module_customer_segment->getRestrictedItems();
+        
+        if (empty($restrictions['category'])) return;
+
+        $customer_group_id = ($this->customer->isLogged()) ? (int)$this->customer->getGroupId() : (int)$this->config->get('config_customer_group_id');
+
+        // getCategory hook
+        if ($route == 'catalog/model/catalog/category/getCategory/after' && !empty($output)) {
+            $category_id = (int)$output['category_id'];
+            if (isset($restrictions['category'][$category_id])) {
+                if (!in_array($customer_group_id, $restrictions['category'][$category_id])) {
+                    $output = false; // Hide category
+                }
+            }
+        }
+
+        // getCategories hook
+        if ($route == 'catalog/model/catalog/category/getCategories/after' && is_array($output)) {
+            foreach ($output as $key => $category) {
+                $category_id = (int)$category['category_id'];
+                if (isset($restrictions['category'][$category_id])) {
+                    if (!in_array($customer_group_id, $restrictions['category'][$category_id])) {
+                        unset($output[$key]);
+                    }
+                }
+            }
+            $output = array_values($output);
+        }
+    }
 }
+
 

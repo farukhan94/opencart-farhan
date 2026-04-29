@@ -10,3 +10,79 @@
 2026-04-28 4:50:11 - PHP Notice:  Trying to access array offset on value of type bool in /var/www/html/admin/controller/extension/module/customer_segment.php on line 287
 2026-04-28 4:50:11 - PHP Notice:  Trying to access array offset on value of type bool in /var/www/html/admin/controller/extension/module/customer_segment.php on line 288
 2026-04-28 5:19:55 - CustomerSegment: Rule updated: tet (ID: 1)
+2026-04-29 22:13:45 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504425): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:46 - PHP Warning:  fopen(/var/www/html/system/storage/cache/cache.store.1777504426): failed to open stream: No such file or directory in /var/www/html/system/library/cache/file.php on line 28
+2026-04-29 22:13:46 - PHP Warning:  flock() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 30
+2026-04-29 22:13:46 - PHP Warning:  fread() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:13:46 - PHP Warning:  flock() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 34
+2026-04-29 22:13:46 - PHP Warning:  fclose() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 36
+2026-04-29 22:13:46 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504426): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:46 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504426): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:46 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504426): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:46 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504426): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:46 - PHP Warning:  filesize(): stat failed for /var/www/html/system/storage/cache/cache.store.1777504426 in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:13:46 - PHP Warning:  fread(): Length parameter must be greater than 0 in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:13:46 - PHP Warning:  filesize(): stat failed for /var/www/html/system/storage/cache/cache.store.1777504426 in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:13:46 - PHP Warning:  fread(): Length parameter must be greater than 0 in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:13:46 - PHP Warning:  filesize(): stat failed for /var/www/html/system/storage/cache/cache.store.1777504426 in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:13:46 - PHP Warning:  fread(): Length parameter must be greater than 0 in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:13:46 - PHP Warning:  filesize(): stat failed for /var/www/html/system/storage/cache/cache.store.1777504426 in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:13:46 - PHP Warning:  fread(): Length parameter must be greater than 0 in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:13:46 - PHP Warning:  fopen(/var/www/html/system/storage/cache/cache.store.1777504426): failed to open stream: No such file or directory in /var/www/html/system/library/cache/file.php on line 28
+2026-04-29 22:13:46 - PHP Warning:  flock() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 30
+2026-04-29 22:13:46 - PHP Warning:  fread() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:13:46 - PHP Warning:  flock() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 34
+2026-04-29 22:13:46 - PHP Warning:  fclose() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 36
+2026-04-29 22:13:47 - PHP Warning:  filesize(): stat failed for /var/www/html/system/storage/cache/cache.store.1777504427 in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:13:47 - PHP Warning:  fread(): Length parameter must be greater than 0 in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:13:47 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504427): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:47 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504427): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:47 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504427): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:47 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504427): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:47 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504427): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:47 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504427): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:48 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504427): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:48 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504428): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:48 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504428): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:48 - PHP Warning:  filesize(): stat failed for /var/www/html/system/storage/cache/cache.store.1777504428 in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:13:48 - PHP Warning:  fread(): Length parameter must be greater than 0 in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:13:48 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504428): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:48 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504428): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:48 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504428): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:48 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504428): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:48 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504428): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:48 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504428): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:48 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504428): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:48 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504428): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:48 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504428): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:48 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504428): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:49 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504429): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:49 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504429): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:49 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504429): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:49 - PHP Warning:  fopen(/var/www/html/system/storage/cache/cache.store.1777504429): failed to open stream: No such file or directory in /var/www/html/system/library/cache/file.php on line 28
+2026-04-29 22:13:49 - PHP Warning:  flock() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 30
+2026-04-29 22:13:49 - PHP Warning:  fread() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:13:49 - PHP Warning:  flock() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 34
+2026-04-29 22:13:49 - PHP Warning:  fclose() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 36
+2026-04-29 22:13:49 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504429): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:49 - PHP Warning:  fopen(/var/www/html/system/storage/cache/cache.store.1777504429): failed to open stream: No such file or directory in /var/www/html/system/library/cache/file.php on line 28
+2026-04-29 22:13:49 - PHP Warning:  flock() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 30
+2026-04-29 22:13:49 - PHP Warning:  fread() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:13:49 - PHP Warning:  flock() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 34
+2026-04-29 22:13:49 - PHP Warning:  fclose() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 36
+2026-04-29 22:13:50 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504430): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:50 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504430): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:50 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504430): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:50 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504430): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:50 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504430): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:13:50 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777504430): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:37:41 - CustomerSegment: Module settings saved. Status: Enabled by user 1
+2026-04-29 22:43:25 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777506205): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:43:25 - PHP Warning:  fread(): Length parameter must be greater than 0 in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:43:25 - PHP Warning:  fopen(/var/www/html/system/storage/cache/cache.store.1777506205): failed to open stream: No such file or directory in /var/www/html/system/library/cache/file.php on line 28
+2026-04-29 22:43:25 - PHP Warning:  flock() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 30
+2026-04-29 22:43:25 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777506205): No such file or directory in /var/www/html/system/library/cache/file.php on line 68
+2026-04-29 22:43:25 - PHP Warning:  fread() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 32
+2026-04-29 22:43:25 - PHP Warning:  flock() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 34
+2026-04-29 22:43:25 - PHP Warning:  fclose() expects parameter 1 to be resource, bool given in /var/www/html/system/library/cache/file.php on line 36
+2026-04-29 22:43:25 - PHP Warning:  unlink(/var/www/html/system/storage/cache/cache.store.1777506205): No such file or directory in /var/www/html/system/library/cache/file.php on line 68

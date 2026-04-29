@@ -80,11 +80,6 @@ class ControllerExtensionModuleCustomerSegment extends Controller
         // Logs
         $data['user_token'] = $this->session->data['user_token'];
 
-        // Analytics
-        $data['analytics'] = array();
-        $query = $this->db->query("SELECT cg.name, COUNT(c.customer_id) as total FROM " . DB_PREFIX . "customer c JOIN " . DB_PREFIX . "customer_group_description cg ON (c.customer_group_id = cg.customer_group_id) WHERE cg.language_id = '" . (int) $this->config->get('config_language_id') . "' GROUP BY c.customer_group_id");
-        $data['analytics'] = $query->rows;
-
         // Health Check
         $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "event WHERE `code` = 'module_customer_segment' LIMIT 1");
         $data['event_status'] = $query->num_rows ? true : false;
@@ -654,10 +649,16 @@ class ControllerExtensionModuleCustomerSegment extends Controller
             $json['error'] = 'Title is required';
         } else {
             $this->load->model('extension/module/customer_segment');
+
+            $data = $this->request->post;
+            if (isset($this->request->post['group_ids']) && !is_array($this->request->post['group_ids'])) {
+                $data['group_ids'] = explode(',', $this->request->post['group_ids']);
+            }
+
             if (!empty($this->request->post['banner_id'])) {
-                $this->model_extension_module_customer_segment->editBanner($this->request->post['banner_id'], $this->request->post);
+                $this->model_extension_module_customer_segment->editBanner($this->request->post['banner_id'], $data);
             } else {
-                $this->model_extension_module_customer_segment->addBanner($this->request->post);
+                $this->model_extension_module_customer_segment->addBanner($data);
             }
             $json['success'] = true;
         }
@@ -700,10 +701,16 @@ class ControllerExtensionModuleCustomerSegment extends Controller
             $json['error'] = 'Name is required';
         } else {
             $this->load->model('extension/module/customer_segment');
+
+            $data = $this->request->post;
+            if (isset($this->request->post['group_ids']) && !is_array($this->request->post['group_ids'])) {
+                $data['group_ids'] = explode(',', $this->request->post['group_ids']);
+            }
+
             if (!empty($this->request->post['slider_id'])) {
-                $this->model_extension_module_customer_segment->editSlider($this->request->post['slider_id'], $this->request->post);
+                $this->model_extension_module_customer_segment->editSlider($this->request->post['slider_id'], $data);
             } else {
-                $this->model_extension_module_customer_segment->addSlider($this->request->post);
+                $this->model_extension_module_customer_segment->addSlider($data);
             }
             $json['success'] = true;
         }
@@ -746,10 +753,16 @@ class ControllerExtensionModuleCustomerSegment extends Controller
             $json['error'] = 'Title is required';
         } else {
             $this->load->model('extension/module/customer_segment');
+
+            $data = $this->request->post;
+            if (isset($this->request->post['group_ids']) && !is_array($this->request->post['group_ids'])) {
+                $data['group_ids'] = explode(',', $this->request->post['group_ids']);
+            }
+
             if (!empty($this->request->post['promotion_id'])) {
-                $this->model_extension_module_customer_segment->editPromotion($this->request->post['promotion_id'], $this->request->post);
+                $this->model_extension_module_customer_segment->editPromotion($this->request->post['promotion_id'], $data);
             } else {
-                $this->model_extension_module_customer_segment->addPromotion($this->request->post);
+                $this->model_extension_module_customer_segment->addPromotion($data);
             }
             $json['success'] = true;
         }
@@ -868,5 +881,125 @@ class ControllerExtensionModuleCustomerSegment extends Controller
 
         $this->response->addHeader('Content-Type: application/json');
         $this->response->setOutput(json_encode($json));
+    }
+
+    // ----------------------------------------------------------------
+    // RESTRICTED CONTENT
+    // ----------------------------------------------------------------
+    public function getRestrictions()
+    {
+        $this->load->model('extension/module/customer_segment');
+        $rows = $this->model_extension_module_customer_segment->getRestrictions();
+        
+        $this->load->model('catalog/product');
+        $this->load->model('catalog/category');
+
+        foreach ($rows as &$row) {
+            $row['group_ids'] = json_decode($row['customer_group_ids'], true);
+            if ($row['item_type'] == 'product') {
+                $product = $this->model_catalog_product->getProduct($row['item_id']);
+                $row['name'] = $product ? $product['name'] : 'Unknown Product';
+            } else {
+                $category = $this->model_catalog_category->getCategory($row['item_id']);
+                $row['name'] = $category ? $category['name'] : 'Unknown Category';
+            }
+        }
+
+        $this->response->addHeader('Content-Type: application/json');
+        $this->response->setOutput(json_encode($rows));
+    }
+
+    public function saveRestriction()
+    {
+        $json = array();
+        if (!$this->user->hasPermission('modify', 'extension/module/customer_segment')) {
+            $json['error'] = 'Permission Denied';
+        } elseif (empty($this->request->post['item_id'])) {
+            $json['error'] = 'Item ID is required';
+        } else {
+            $this->load->model('extension/module/customer_segment');
+            $data = $this->request->post;
+            if (isset($this->request->post['group_ids']) && !is_array($this->request->post['group_ids'])) {
+                $data['group_ids'] = explode(',', $this->request->post['group_ids']);
+            }
+            $this->model_extension_module_customer_segment->addRestriction($data);
+            $json['success'] = true;
+        }
+        $this->response->addHeader('Content-Type: application/json');
+        $this->response->setOutput(json_encode($json));
+    }
+
+    public function deleteRestriction()
+    {
+        $json = array();
+        if (!$this->user->hasPermission('modify', 'extension/module/customer_segment')) {
+            $json['error'] = 'Permission Denied';
+        } elseif (isset($this->request->get['id'])) {
+            $this->load->model('extension/module/customer_segment');
+            $this->model_extension_module_customer_segment->deleteRestriction($this->request->get['id']);
+            $json['success'] = true;
+        }
+        $this->response->addHeader('Content-Type: application/json');
+        $this->response->setOutput(json_encode($json));
+    }
+
+    // ----------------------------------------------------------------
+    // COMBOS
+    // ----------------------------------------------------------------
+    public function getCombos()
+    {
+        $this->load->model('extension/module/customer_segment');
+        $rows = $this->model_extension_module_customer_segment->getCombos();
+        foreach ($rows as &$row) {
+            $row['group_ids'] = json_decode($row['customer_group_ids'], true);
+        }
+        $this->response->addHeader('Content-Type: application/json');
+        $this->response->setOutput(json_encode($rows));
+    }
+
+    public function saveCombo()
+    {
+        $json = array();
+        if (!$this->user->hasPermission('modify', 'extension/module/customer_segment')) {
+            $json['error'] = 'Permission Denied';
+        } elseif (empty($this->request->post['name'])) {
+            $json['error'] = 'Name is required';
+        } else {
+            $this->load->model('extension/module/customer_segment');
+            $data = $this->request->post;
+            if (isset($this->request->post['group_ids']) && !is_array($this->request->post['group_ids'])) {
+                $data['group_ids'] = explode(',', $this->request->post['group_ids']);
+            }
+            if (!empty($this->request->post['combo_id'])) {
+                $this->model_extension_module_customer_segment->editCombo($this->request->post['combo_id'], $data);
+            } else {
+                $this->model_extension_module_customer_segment->addCombo($data);
+            }
+            $json['success'] = true;
+        }
+        $this->response->addHeader('Content-Type: application/json');
+        $this->response->setOutput(json_encode($json));
+    }
+
+    public function deleteCombo()
+    {
+        $json = array();
+        if (!$this->user->hasPermission('modify', 'extension/module/customer_segment')) {
+            $json['error'] = 'Permission Denied';
+        } elseif (isset($this->request->get['combo_id'])) {
+            $this->load->model('extension/module/customer_segment');
+            $this->model_extension_module_customer_segment->deleteCombo($this->request->get['combo_id']);
+            $json['success'] = true;
+        }
+        $this->response->addHeader('Content-Type: application/json');
+        $this->response->setOutput(json_encode($json));
+    }
+
+    public function getGeneratedCouponsReport() {
+        $this->load->model('extension/module/customer_segment');
+        $promotion_id = isset($this->request->get['promotion_id']) ? (int)$this->request->get['promotion_id'] : 0;
+        $rows = $this->model_extension_module_customer_segment->getGeneratedCoupons($promotion_id);
+        $this->response->addHeader('Content-Type: application/json');
+        $this->response->setOutput(json_encode($rows));
     }
 }
