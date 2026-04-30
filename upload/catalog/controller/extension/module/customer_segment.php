@@ -213,7 +213,7 @@ class ControllerExtensionModuleCustomerSegment extends Controller
     }
 
     // ----------------------------------------------------------------
-    // RESTRICTION ENFORCEMENT HOOKS
+    // SPECIAL ITEMS ENFORCEMENT HOOKS
     // ----------------------------------------------------------------
     
     public function eventCheckProduct(&$route, &$args, &$output)
@@ -221,29 +221,67 @@ class ControllerExtensionModuleCustomerSegment extends Controller
         if (!$this->config->get('module_customer_segment_status')) return;
         
         $this->load->model('extension/module/customer_segment');
-        $restrictions = $this->model_extension_module_customer_segment->getRestrictedItems();
+        $special_items = $this->model_extension_module_customer_segment->getSpecialItems();
         
-        if (empty($restrictions['product'])) return;
+        if (empty($special_items['product'])) return;
 
         $customer_group_id = ($this->customer->isLogged()) ? (int)$this->customer->getGroupId() : (int)$this->config->get('config_customer_group_id');
 
         // getProduct hook
         if ($route == 'catalog/model/catalog/product/getProduct/after' && !empty($output)) {
             $product_id = (int)$output['product_id'];
-            if (isset($restrictions['product'][$product_id])) {
-                if (!in_array($customer_group_id, $restrictions['product'][$product_id])) {
+            
+            // 1. Check Visibility (Hide if restricted)
+            if (isset($special_items['product'][$product_id])) {
+                if (!in_array($customer_group_id, $special_items['product'][$product_id])) {
                     $output = false; // Hide product
+                    return;
+                }
+            }
+
+            // 2. Apply Dynamic Discount for Display
+            $discount = $this->model_extension_module_customer_segment->getProductDiscount($product_id, $customer_group_id);
+            if ($discount['value'] > 0) {
+                $base_price = ($output['special']) ? $output['special'] : $output['price'];
+                
+                if ($discount['type'] == 'percent') {
+                    $new_special = $base_price - ($base_price * ($discount['value'] / 100));
+                } else {
+                    $new_special = $base_price - $discount['value'];
+                }
+                
+                if ($new_special < $base_price) {
+                    $output['special'] = $new_special;
                 }
             }
         }
 
         // getProducts hook (usually returns array of products)
         if ($route == 'catalog/model/catalog/product/getProducts/after' && is_array($output)) {
-            foreach ($output as $key => $product) {
+            foreach ($output as $key => &$product) {
                 $product_id = (int)$product['product_id'];
-                if (isset($restrictions['product'][$product_id])) {
-                    if (!in_array($customer_group_id, $restrictions['product'][$product_id])) {
+                
+                // 1. Visibility Check
+                if (isset($special_items['product'][$product_id])) {
+                    if (!in_array($customer_group_id, $special_items['product'][$product_id])) {
                         unset($output[$key]);
+                        continue;
+                    }
+                }
+
+                // 2. Discount Check
+                $discount = $this->model_extension_module_customer_segment->getProductDiscount($product_id, $customer_group_id);
+                if ($discount['value'] > 0) {
+                    $base_price = ($product['special']) ? $product['special'] : $product['price'];
+                    
+                    if ($discount['type'] == 'percent') {
+                        $new_special = $base_price - ($base_price * ($discount['value'] / 100));
+                    } else {
+                        $new_special = $base_price - $discount['value'];
+                    }
+                    
+                    if ($new_special < $base_price) {
+                        $product['special'] = $new_special;
                     }
                 }
             }
@@ -256,17 +294,17 @@ class ControllerExtensionModuleCustomerSegment extends Controller
         if (!$this->config->get('module_customer_segment_status')) return;
 
         $this->load->model('extension/module/customer_segment');
-        $restrictions = $this->model_extension_module_customer_segment->getRestrictedItems();
+        $special_items = $this->model_extension_module_customer_segment->getSpecialItems();
         
-        if (empty($restrictions['category'])) return;
+        if (empty($special_items['category'])) return;
 
         $customer_group_id = ($this->customer->isLogged()) ? (int)$this->customer->getGroupId() : (int)$this->config->get('config_customer_group_id');
 
         // getCategory hook
         if ($route == 'catalog/model/catalog/category/getCategory/after' && !empty($output)) {
             $category_id = (int)$output['category_id'];
-            if (isset($restrictions['category'][$category_id])) {
-                if (!in_array($customer_group_id, $restrictions['category'][$category_id])) {
+            if (isset($special_items['category'][$category_id])) {
+                if (!in_array($customer_group_id, $special_items['category'][$category_id])) {
                     $output = false; // Hide category
                 }
             }
@@ -276,8 +314,8 @@ class ControllerExtensionModuleCustomerSegment extends Controller
         if ($route == 'catalog/model/catalog/category/getCategories/after' && is_array($output)) {
             foreach ($output as $key => $category) {
                 $category_id = (int)$category['category_id'];
-                if (isset($restrictions['category'][$category_id])) {
-                    if (!in_array($customer_group_id, $restrictions['category'][$category_id])) {
+                if (isset($special_items['category'][$category_id])) {
+                    if (!in_array($customer_group_id, $special_items['category'][$category_id])) {
                         unset($output[$key]);
                     }
                 }

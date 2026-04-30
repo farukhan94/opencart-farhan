@@ -19,7 +19,8 @@ upload/system/storage/upload/*
 !upload/system/storage/upload/index.html
 upload/system/storage/modification/*
 !upload/system/storage/modification/index.html
-
+upload/image/cache/*
+upload/system/storage/*
 # Generated configuration files
 config.php
 admin/config.php

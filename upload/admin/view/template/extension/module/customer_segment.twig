@@ -2,6 +2,16 @@
 <div id="content">
   <div class="page-header">
     <div class="container-fluid">
+<style>
+  .modal-body {
+    max-height: 75vh;
+    overflow-y: auto;
+  }
+  .well-sm {
+    background: #fcfcfc;
+  }
+</style>
+
       <div class="pull-right">
         <button type="submit" form="form-module" data-toggle="tooltip" title="{{ button_save }}" class="btn btn-primary"><i class="fa fa-save"></i></button>
         <a href="{{ cancel }}" data-toggle="tooltip" title="{{ button_cancel }}" class="btn btn-default"><i class="fa fa-reply"></i></a></div>
@@ -38,10 +48,8 @@
 
             <li><a href="#tab-manual" data-toggle="tab">{{ tab_manual }}</a></li>
             <li><a href="#tab-logs" data-toggle="tab">{{ tab_logs }}</a></li>
-            <li><a href="#tab-banners" data-toggle="tab"><i class="fa fa-image"></i> Banners</a></li>
-            <li><a href="#tab-sliders" data-toggle="tab"><i class="fa fa-sliders"></i> Sliders</a></li>
-            <li><a href="#tab-promotions" data-toggle="tab"><i class="fa fa-tag"></i> Promotions</a></li>
-            <li><a href="#tab-restricted" data-toggle="tab"><i class="fa fa-lock"></i> Restricted Content</a></li>
+                                    <li><a href="#tab-promotions" data-toggle="tab"><i class="fa fa-tag"></i> Promotions</a></li>
+            <li><a href="#tab-special" data-toggle="tab"><i class="fa fa-lock"></i> Special Items</a></li>
             <li><a href="#tab-combos" data-toggle="tab"><i class="fa fa-cubes"></i> Special Combos</a></li>
           </ul>
 
@@ -319,17 +327,17 @@
             </div>
 
             <!-- ===== RESTRICTED CONTENT TAB ===== -->
-            <div class="tab-pane" id="tab-restricted">
+            <div class="tab-pane" id="tab-special">
               <div class="well" style="margin-top:10px;">
                 <div class="row">
                   <div class="col-sm-8"><p class="text-info"><i class="fa fa-info-circle"></i> Items listed here will <strong>ONLY</strong> be visible to members of the selected groups. Others will not see them in search or categories.</p></div>
-                  <div class="col-sm-4 text-right"><button type="button" onclick="openRestrictionModal();" class="btn btn-primary"><i class="fa fa-plus"></i> Add Restriction</button></div>
+                  <div class="col-sm-4 text-right"><button type="button" onclick="openSpecialItemModal();" class="btn btn-primary"><i class="fa fa-plus"></i> Add Special Item</button></div>
                 </div>
               </div>
               <div class="table-responsive">
                 <table class="table table-bordered table-hover">
                   <thead><tr><td>Type</td><td>Item Name</td><td>Visible To Groups</td><td class="text-right">Action</td></tr></thead>
-                  <tbody id="restricted-list"></tbody>
+                  <tbody id="special-list"></tbody>
                 </table>
               </div>
             </div>
@@ -370,7 +378,6 @@
           <div class="col-sm-9">
             <input type="text" name="group_name" value="" placeholder="Search groups..." id="input-banner-group" class="form-control" />
             <div id="banner-group-list" class="well well-sm" style="height: 100px; overflow: auto; margin-top:10px;"></div>
-            <input type="hidden" name="group_ids" value="" id="banner-group-ids" />
           </div>
         </div>
         <div class="form-group"><label class="col-sm-3 control-label">Title</label><div class="col-sm-9"><input type="text" name="title" id="banner-title" class="form-control" /></div></div>
@@ -401,7 +408,6 @@
           <div class="col-sm-9">
             <input type="text" name="group_name" value="" placeholder="Search groups..." id="input-slider-group" class="form-control" />
             <div id="slider-group-list" class="well well-sm" style="height: 100px; overflow: auto; margin-top:10px;"></div>
-            <input type="hidden" name="group_ids" value="" id="slider-group-ids" />
           </div>
         </div>
         <div class="form-group"><label class="col-sm-3 control-label">Name</label><div class="col-sm-9"><input type="text" name="name" id="slider-name" class="form-control" /></div></div>
@@ -433,19 +439,29 @@
           <div class="col-sm-9">
             <input type="text" name="group_name" value="" placeholder="Search groups..." id="input-promo-group" class="form-control" />
             <div id="promo-group-list" class="well well-sm" style="height: 100px; overflow: auto; margin-top:10px;"></div>
-            <input type="hidden" name="group_ids" value="" id="promo-group-ids" />
           </div>
         </div>
         <div class="form-group"><label class="col-sm-3 control-label">Title</label><div class="col-sm-9"><input type="text" name="title" id="promo-title" class="form-control" /></div></div>
         <div class="form-group"><label class="col-sm-3 control-label">Description</label><div class="col-sm-9"><textarea name="description" id="promo-desc" class="form-control" rows="2"></textarea></div></div>
         
         <div class="form-group">
-          <label class="col-sm-3 control-label">Type</label>
+          <label class="col-sm-3 control-label">Visual Type</label>
+          <div class="col-sm-9">
+            <select name="visual_type" id="promo-visual-type" class="form-control" onchange="togglePromoType();">
+              <option value="none">None (No Visual)</option>
+              <option value="banner">Banner / Carousel</option>
+              <option value="product_slider">Product Slider</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Reward Action</label>
           <div class="col-sm-9">
             <select name="type" id="promo-type" class="form-control" onchange="togglePromoType();">
-              <option value="banner">Banner Only</option>
+              <option value="none">None (No Reward)</option>
               <option value="coupon">Auto-Generated Coupon</option>
-              <option value="cart_discount">Automated Checkout Discount</option>
+              <option value="cart_discount">Checkout Discount</option>
             </select>
           </div>
         </div>
@@ -460,6 +476,18 @@
                </select>
                <div class="help-block">New unique coupons will be cloned from this template coupon.</div>
              </div>
+           </div>
+        </div>
+
+        
+        <!-- Banner Settings -->
+        <div id="promo-banner-settings" style="display:none;">
+           <div class="table-responsive">
+             <table class="table table-bordered table-hover" id="banner-image-table">
+               <thead><tr><th>Image</th><th>Link</th><th>Action</th></tr></thead>
+               <tbody></tbody>
+               <tfoot><tr><td colspan="2"></td><td><button type="button" onclick="addBannerImage();" class="btn btn-primary"><i class="fa fa-plus-circle"></i></button></td></tr></tfoot>
+             </table>
            </div>
         </div>
 
@@ -483,6 +511,7 @@
           <label class="col-sm-3 control-label">Scope</label>
           <div class="col-sm-9">
             <select name="scope" id="promo-scope" class="form-control" onchange="togglePromoScope();">
+              <option value="none">None</option>
               <option value="all">All Products</option>
               <option value="specific_products">Specific Products</option>
               <option value="specific_categories">Specific Categories</option>
@@ -515,15 +544,15 @@
 </div>
 
 <!-- Restriction Modal -->
-<div class="modal fade" id="modal-restriction" tabindex="-1" role="dialog">
+<div class="modal fade" id="modal-special" tabindex="-1" role="dialog">
   <div class="modal-dialog" role="document"><div class="modal-content">
-    <div class="modal-header"><button type="button" class="close" data-dismiss="modal">&times;</button><h4 class="modal-title">Secret Content Restriction</h4></div>
+    <div class="modal-header"><button type="button" class="close" data-dismiss="modal">&times;</button><h4 class="modal-title">Special Item Details</h4></div>
     <div class="modal-body">
-      <form id="form-restriction" class="form-horizontal">
+      <form id="form-special" class="form-horizontal">
         <div class="form-group">
           <label class="col-sm-3 control-label">Type</label>
           <div class="col-sm-9">
-            <select name="item_type" id="restriction-type" class="form-control">
+            <select name="item_type" id="special-type" class="form-control">
               <option value="product">Secret Product</option>
               <option value="category">Secret Category</option>
             </select>
@@ -532,23 +561,22 @@
         <div class="form-group">
           <label class="col-sm-3 control-label">Item</label>
           <div class="col-sm-9">
-            <input type="text" id="restriction-item-search" placeholder="Search..." class="form-control" />
-            <div id="restriction-item-name" style="margin-top:5px; font-weight:bold;"></div>
-            <input type="hidden" name="item_id" id="restriction-item-id" />
+            <input type="text" id="special-item-search" placeholder="Search..." class="form-control" />
+            <div id="special-item-name" style="margin-top:5px; font-weight:bold;"></div>
+            <input type="hidden" name="item_id" id="special-item-id" />
           </div>
         </div>
         <div class="form-group">
           <label class="col-sm-3 control-label">Visible To Groups</label>
           <div class="col-sm-9">
-            <input type="text" name="group_name" value="" placeholder="Search groups..." id="input-restrict-group" class="form-control" />
-            <div id="restrict-group-list" class="well well-sm" style="height: 100px; overflow: auto; margin-top:10px;"></div>
-            <input type="hidden" name="group_ids" value="" id="restrict-group-ids" />
+            <input type="text" name="group_name" value="" placeholder="Search groups..." id="input-special-group" class="form-control" />
+            <div id="special-group-list" class="well well-sm" style="height: 100px; overflow: auto; margin-top:10px;"></div>
             <small class="help-block">Only members of these groups will see this content.</small>
           </div>
         </div>
       </form>
     </div>
-    <div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal">Close</button><button type="button" class="btn btn-primary" onclick="saveRestriction();">Save</button></div>
+    <div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal">Close</button><button type="button" class="btn btn-primary" onclick="saveSpecialItem();">Save</button></div>
   </div></div>
 </div>
 
@@ -608,7 +636,6 @@
           <div class="col-sm-9">
             <input type="text" name="group_name" value="" placeholder="Search groups..." id="input-combo-group" class="form-control" />
             <div id="combo-group-list" class="well well-sm" style="height: 100px; overflow: auto; margin-top:10px;"></div>
-            <input type="hidden" name="group_ids" value="" id="combo-group-ids" />
           </div>
         </div>
 
@@ -816,7 +843,7 @@ $(document).ready(function() {
     setupGroupAutocomplete('input-banner-group', 'banner-group-list', 'group_ids');
     setupGroupAutocomplete('input-slider-group', 'slider-group-list', 'group_ids');
     setupGroupAutocomplete('input-promo-group', 'promo-group-list', 'group_ids');
-    setupGroupAutocomplete('input-restrict-group', 'restrict-group-list', 'group_ids');
+    setupGroupAutocomplete('input-special-group', 'special-group-list', 'group_ids');
     setupGroupAutocomplete('input-combo-group', 'combo-group-list', 'group_ids');
     
     // For Categories in Promotion
@@ -1688,7 +1715,7 @@ function loadPromos(groupId) {
         dataType: 'json',
         success: function(json) {
             var html = '';
-            if (json.length > 0) {
+            if (json && json.length > 0) {
                 for (var i = 0; i < json.length; i++) {
                     var p = json[i];
                     var groupNames = p.group_ids ? Object.values(p.group_ids).join(', ') : 'All';
@@ -1707,80 +1734,122 @@ function loadPromos(groupId) {
     });
 }
 
+var banner_row = 0;
+function addBannerImage(image, thumb, link) {
+    image = image || '';
+    thumb = thumb || '{{ placeholder }}';
+    link = link || '';
+    var html  = '<tr id="banner-row' + banner_row + '">';
+    html += '  <td class="text-center"><a href="" id="thumb-banner' + banner_row + '" data-toggle="image" class="img-thumbnail"><img src="' + thumb + '" alt="" title="" data-placeholder="{{ placeholder }}" /></a><input type="hidden" name="banner_data[' + banner_row + '][image]" value="' + image + '" id="input-banner' + banner_row + '" /></td>';
+    html += '  <td class="text-left"><input type="text" name="banner_data[' + banner_row + '][link]" value="' + link + '" class="form-control" /></td>';
+    html += '  <td class="text-left"><button type="button" onclick="$(\'#banner-row' + banner_row  + '\').remove();" class="btn btn-danger"><i class="fa fa-minus-circle"></i></button></td>';
+    html += '</tr>';
+    $('#banner-image-table tbody').append(html);
+    banner_row++;
+}
+
 function openPromoModal(promo_id) {
     $('#form-promo')[0].reset();
-    $('#promo-group-list, #promo-category-list').empty();
-    $('#promo-product-list').empty();
+    $('#promo-group-list, #promo-category-list, #promo-product-list').empty();
+    $('#banner-image-table tbody').empty();
     $('#promo-id').val(promo_id || '');
-    
-    // Load coupons for basis
+    banner_row = 0;
+
+    // Load coupons first to ensure the dropdown is ready
     $.ajax({
-        url: 'index.php?route=marketing/coupon/autocomplete&user_token={{ user_token }}',
+        url: 'index.php?route=extension/module/customer_segment/getCoupons&user_token={{ user_token }}',
         dataType: 'json',
         success: function(json) {
-            var html = '<option value=\"0\">-- Select Template Coupon --</option>';
+            var html = '<option value="0">-- Select Template Coupon --</option>';
             for(var i=0; i<json.length; i++) {
-                html += '<option value=\"' + json[i].coupon_id + '\">' + json[i].name + ' (' + json[i].code + ')</option>';
+                html += '<option value="' + json[i].coupon_id + '">' + json[i].name + ' (' + json[i].code + ')</option>';
             }
             $('#promo-coupon-basis').html(html);
             
             if (promo_id) {
-                $.ajax({ url: 'index.php?route=extension/module/customer_segment/getPromotions&user_token={{ user_token }}', dataType: 'json', success: function(json) {
-                    var p = json.find(x => x.promotion_id == promo_id);
-                    if (p) {
-                        if (p.group_ids) { $.each(p.group_ids, function(id, name) { $('#promo-group-list').append('<div id="promo-group-list-item' + id + '"><i class="fa fa-minus-circle"></i> ' + name + '<input type="hidden" name="group_ids[]" value="' + id + '" /></div>'); }); }
-                        $('#promo-title').val(p.title);
-                        $('#promo-desc').val(p.description);
-                        $('#promo-type').val(p.type);
-                        $('#promo-status').val(p.status);
-                        $('#promo-scope').val(p.scope);
-                        $('#promo-discount-value').val(p.discount_value);
-                        $('#promo-discount-type').val(p.discount_type);
-                        $('#promo-coupon-basis').val(p.coupon_basis_id);
-                        
-                        if (p.category_ids) {
-                            $.ajax({
-                                url: 'index.php?route=extension/module/customer_segment/getCategoryInfo&user_token={{ user_token }}&ids=' + p.category_ids,
-                                dataType: 'json',
-                                success: function(cJson) {
-                                    for(var j=0; j<cJson.length; j++) {
-                                        $('#promo-category-list').append('<div id="promo-category-list-item' + cJson[j].category_id + '"><i class="fa fa-minus-circle"></i> ' + cJson[j].name + '<input type="hidden" name="category_ids[]" value="' + cJson[j].category_id + '" /></div>');
-                                    }
+                $.ajax({ 
+                    url: 'index.php?route=extension/module/customer_segment/getPromotion&user_token={{ user_token }}&promotion_id=' + promo_id, 
+                    dataType: 'json', 
+                    success: function(p) {
+                        if (p) {
+                            $('#promo-title').val(p.title);
+                            $('#promo-desc').val(p.description);
+                            $('#promo-type').val(p.type);
+                            $('#promo-visual-type').val(p.visual_type || 'none');
+                            $('#promo-status').val(p.status);
+                            $('#promo-scope').val(p.scope);
+                            $('#promo-discount-value').val(p.discount_value);
+                            $('#promo-discount-type').val(p.discount_type);
+                            $('#promo-coupon-basis').val(p.coupon_basis_id);
+                            
+                            if (p.group_ids) { 
+                                $.each(p.group_ids, function(id, name) { 
+                                    $('#promo-group-list').append('<div id="promo-group-list-item' + id + '"><i class="fa fa-minus-circle"></i> ' + name + '<input type="hidden" name="group_ids[]" value="' + id + '" /></div>'); 
+                                }); 
+                            }
+
+                            if (p.banner_data) {
+                                try {
+                                    var bdata = JSON.parse(p.banner_data);
+                                    $.each(bdata, function(k, v) {
+                                        addBannerImage(v.image, v.thumb || v.image, v.link);
+                                    });
+                                } catch(e) {
+                                    console.log('Error parsing banner_data:', e);
                                 }
-                            });
-                        }
-                        
-                        if (p.product_ids) {
-                            $.ajax({
-                                url: 'index.php?route=extension/module/customer_segment/getProductInfo&user_token={{ user_token }}&ids=' + p.product_ids,
-                                dataType: 'json',
-                                success: function(pJson) {
-                                    for(var j=0; j<pJson.length; j++) {
-                                        $('#promo-product-list').append('<div id=\"promo-product' + pJson[j].product_id + '\"><i class=\"fa fa-minus-circle\"></i> ' + pJson[j].name + '<input type=\"hidden\" name=\"selected_product[]\" value=\"' + pJson[j].product_id + '\" /></div>');
+                            }
+
+                            if (p.category_ids) {
+                                $.ajax({
+                                    url: 'index.php?route=extension/module/customer_segment/getCategoryInfo&user_token={{ user_token }}&ids=' + p.category_ids,
+                                    dataType: 'json',
+                                    success: function(cJson) {
+                                        for(var j=0; j<cJson.length; j++) {
+                                            $('#promo-category-list').append('<div id="promo-category-list-item' + cJson[j].category_id + '"><i class="fa fa-minus-circle"></i> ' + cJson[j].name + '<input type="hidden" name="category_ids[]" value="' + cJson[j].category_id + '" /></div>');
+                                        }
                                     }
-                                }
-                            });
+                                });
+                            }
+                            
+                            if (p.product_ids) {
+                                $.ajax({
+                                    url: 'index.php?route=extension/module/customer_segment/getProductInfo&user_token={{ user_token }}&ids=' + p.product_ids,
+                                    dataType: 'json',
+                                    success: function(pJson) {
+                                        for(var j=0; j<pJson.length; j++) {
+                                            $('#promo-product-list').append('<div id="promo-product' + pJson[j].product_id + '"><i class="fa fa-minus-circle"></i> ' + pJson[j].name + '<input type="hidden" name="selected_product[]" value="' + pJson[j].product_id + '" /></div>');
+                                        }
+                                    }
+                                });
+                            }
+                            togglePromoType();
+                            togglePromoScope();
                         }
-                        togglePromoType();
-                        togglePromoScope();
                     }
-                }});
+                });
             } else {
                 togglePromoType();
                 togglePromoScope();
             }
         }
     });
-
     $('#modal-promo').modal('show');
 }
 
 function togglePromoType() {
-    var type = $('#promo-type').val();
-    $('#promo-coupon-settings').hide();
-    $('#promo-discount-settings').hide();
-    if(type == 'coupon') $('#promo-coupon-settings').show();
-    if(type == 'cart_discount') $('#promo-discount-settings').show();
+    var action = $('#promo-type').val();
+    var visual = $('#promo-visual-type').val();
+    $('#promo-coupon-settings, #promo-discount-settings, #promo-banner-settings').hide();
+    $('#promo-scope').closest('.form-group').show();
+
+    if (action == 'coupon') $('#promo-coupon-settings').show();
+    else if (action == 'cart_discount') $('#promo-discount-settings').show();
+
+    if (visual == 'banner') $('#promo-banner-settings').show();
+    else if (visual == 'product_slider') {
+        $('#promo-scope').val('specific_products').change();
+        $('#promo-scope').closest('.form-group').hide();
+    }
 }
 
 function togglePromoScope() {
@@ -1792,20 +1861,34 @@ function togglePromoScope() {
 
 function savePromo() {
     var product_ids = [];
-    $('#promo-product-list input[name=\"selected_product[]\"]').each(function() { product_ids.push($(this).val()); });
+    $('#promo-product-list input[name="selected_product[]"]').each(function() { product_ids.push($(this).val()); });
     $('#promo-product-ids').val(product_ids.join(','));
+
+    var category_ids = [];
+    $('#promo-category-list input[name="category_ids[]"]').each(function() { category_ids.push($(this).val()); });
+    $('#promo-category-ids').val(category_ids.join(','));
 
     $.ajax({
         url: 'index.php?route=extension/module/customer_segment/savePromotion&user_token={{ user_token }}',
         type: 'post', data: $('#form-promo').serialize(), dataType: 'json',
         success: function(json) {
-            if (json.error) { alert(json.error); } else { $('#modal-promo').modal('hide'); loadPromos($('#filter-promo-group').val()); }
+            if (json.error) alert(json.error);
+            else { $('#modal-promo').modal('hide'); loadPromos($('#filter-promo-group').val()); }
+        },
+        error: function(xhr, ajaxOptions, thrownError) {
+            alert(thrownError + "\n" + xhr.statusText);
         }
     });
 }
 
 function deletePromoRow(id) {
-    if (confirm('Delete this promotion?')) { $.ajax({ url: 'index.php?route=extension/module/customer_segment/deletePromotion&user_token={{ user_token }}&promotion_id=' + id, dataType: 'json', success: function() { loadPromos($('#filter-promo-group').val()); } }); }
+    if (confirm('Delete this promotion?')) {
+        $.ajax({
+            url: 'index.php?route=extension/module/customer_segment/deletePromotion&user_token={{ user_token }}&promotion_id=' + id,
+            dataType: 'json',
+            success: function() { loadPromos($('#filter-promo-group').val()); }
+        });
+    }
 }
 
 $('#promo-product-search').autocomplete({
@@ -1819,17 +1902,17 @@ $('#promo-product-search').autocomplete({
     'select': function(item) {
         $('#promo-product-search').val('');
         $('#promo-product' + item['value']).remove();
-        $('#promo-product-list').append('<div id=\"promo-product' + item['value'] + '\"><i class=\"fa fa-minus-circle\"></i> ' + item['label'] + '<input type=\"hidden\" name=\"selected_product[]\" value=\"' + item['value'] + '\" /></div>');
+        $('#promo-product-list').append('<div id="promo-product' + item['value'] + '"><i class="fa fa-minus-circle"></i> ' + item['label'] + '<input type="hidden" name="selected_product[]" value="' + item['value'] + '" /></div>');
     }
 });
 $('#promo-product-list').delegate('.fa-minus-circle', 'click', function() { $(this).parent().remove(); });
 
-// ---------------------------------------------------------------
+
 // RESTRICTIONS JS
 // ---------------------------------------------------------------
-function loadRestrictions() {
+function loadSpecialItems() {
     $.ajax({
-        url: 'index.php?route=extension/module/customer_segment/getRestrictions&user_token={{ user_token }}',
+        url: 'index.php?route=extension/module/customer_segment/getSpecialItems&user_token={{ user_token }}',
         dataType: 'json',
         success: function(json) {
             var html = '';
@@ -1838,41 +1921,62 @@ function loadRestrictions() {
                     var r = json[i];
                     var groupNames = r.group_ids ? Object.values(r.group_ids).join(', ') : 'None';
                     html += '<tr><td>' + r.item_type + '</td><td>' + r.name + '</td><td>' + groupNames + '</td>';
-                    html += '<td class="text-right"><button type="button" onclick=\"deleteRestriction(' + r.id + ');\" class=\"btn btn-danger btn-xs\"><i class=\"fa fa-trash\"></i></button></td></tr>';
+                    html += '<td class="text-right">';
+                    html += '<button type="button" onclick=\"openSpecialItemModal(' + r.id + ');\" class=\"btn btn-primary btn-xs\"><i class=\"fa fa-pencil\"></i></button> ';
+                    html += '<button type="button" onclick=\"deleteSpecialItem(' + r.id + ');\" class=\"btn btn-danger btn-xs\"><i class=\"fa fa-trash\"></i></button></td></tr>';
                 }
-            } else { html = '<tr><td colspan=\"4\" class=\"text-center\">No restrictions defined.</td></tr>'; }
-            $('#restricted-list').html(html);
+            } else { html = '<tr><td colspan=\"4\" class=\"text-center\">No special items defined.</td></tr>'; }
+            $('#special-list').html(html);
         }
     });
 }
 
-function openRestrictionModal() {
-    $('#form-restriction')[0].reset();
-    $('#restrict-group-list').empty();
-    $('#restriction-item-name').text('');
-    $('#restriction-item-id').val('');
-    $('#modal-restriction').modal('show');
+function openSpecialItemModal(id) {
+    $('#form-special')[0].reset();
+    $('#special-group-list').empty();
+    $('#special-item-name').text('');
+    $('#special-item-id').val('');
+    
+    if (id) {
+        $.ajax({
+            url: 'index.php?route=extension/module/customer_segment/getSpecialItem&user_token={{ user_token }}&id=' + id,
+            dataType: 'json',
+            success: function(json) {
+                if (json) {
+                    $('#special-type').val(json.item_type);
+                    $('#special-item-id').val(json.item_id);
+                    $('#special-item-name').text(json.name);
+                    if (json.group_ids) {
+                        $.each(json.group_ids, function(id, name) {
+                            $('#special-group-list').append('<div id="special-group-list-item' + id + '"><i class="fa fa-minus-circle"></i> ' + name + '<input type="hidden" name="group_ids[]" value="' + id + '" /></div>');
+                        });
+                    }
+                }
+            }
+        });
+    }
+    $('#modal-special').modal('show');
 }
 
-function saveRestriction() {
+function saveSpecialItem() {
     $.ajax({
-        url: 'index.php?route=extension/module/customer_segment/saveRestriction&user_token={{ user_token }}',
-        type: 'post', data: $('#form-restriction').serialize(), dataType: 'json',
+        url: 'index.php?route=extension/module/customer_segment/saveSpecialItem&user_token={{ user_token }}',
+        type: 'post', data: $('#form-special').serialize(), dataType: 'json',
         success: function(json) {
-            if (json.error) { alert(json.error); } else { $('#modal-restriction').modal('hide'); loadRestrictions(); }
+            if (json.error) { alert(json.error); } else { $('#modal-special').modal('hide'); loadSpecialItems(); }
         }
     });
 }
 
-function deleteRestriction(id) {
-    if (confirm('Delete this restriction?')) {
-        $.ajax({ url: 'index.php?route=extension/module/customer_segment/deleteRestriction&user_token={{ user_token }}&id=' + id, dataType: 'json', success: function() { loadRestrictions(); } });
+function deleteSpecialItem(id) {
+    if (confirm('Delete this special item?')) {
+        $.ajax({ url: 'index.php?route=extension/module/customer_segment/deleteSpecialItem&user_token={{ user_token }}&id=' + id, dataType: 'json', success: function() { loadSpecialItems(); } });
     }
 }
 
-$('#restriction-item-search').autocomplete({
+$('#special-item-search').autocomplete({
     'source': function(request, response) {
-        var type = $('#restriction-type').val();
+        var type = $('#special-type').val();
         var url = type == 'product' ? 'index.php?route=catalog/product/autocomplete' : 'index.php?route=catalog/category/autocomplete';
         $.ajax({
             url: url + '&user_token={{ user_token }}&filter_name=' + encodeURIComponent(request),
@@ -1881,9 +1985,9 @@ $('#restriction-item-search').autocomplete({
         });
     },
     'select': function(item) {
-        $('#restriction-item-search').val('');
-        $('#restriction-item-name').text(item['label']);
-        $('#restriction-item-id').val(item['value']);
+        $('#special-item-search').val('');
+        $('#special-item-name').text(item['label']);
+        $('#special-item-id').val(item['value']);
     }
 });
 
@@ -1997,7 +2101,7 @@ $(document).ready(function() {
     loadBanners(0);
     loadSliders(0);
     loadPromos(0);
-    loadRestrictions();
+    loadSpecialItems();
     loadCombos();
 });
 

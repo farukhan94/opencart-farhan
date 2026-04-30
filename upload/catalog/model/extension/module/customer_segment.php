@@ -3,26 +3,42 @@ class ModelExtensionModuleCustomerSegment extends Model
 {
     public function getBanners($customer_group_id)
     {
-        $query = $this->db->query("SELECT b.* FROM `" . DB_PREFIX . "customer_segment_banner` b JOIN `" . DB_PREFIX . "customer_segment_banner_group` bg ON (b.banner_id = bg.banner_id) WHERE bg.customer_group_id = '" . (int) $customer_group_id . "' AND b.status = '1' ORDER BY b.banner_id ASC");
-        return $query->rows;
+        $query = $this->db->query("SELECT p.* FROM `" . DB_PREFIX . "customer_segment_promotion` p JOIN `" . DB_PREFIX . "customer_segment_promotion_group` pg ON (p.promotion_id = pg.promotion_id) WHERE pg.customer_group_id = '" . (int) $customer_group_id . "' AND p.status = '1' AND p.visual_type = 'banner' ORDER BY p.promotion_id ASC");
+        
+        $banners = array();
+        foreach ($query->rows as $row) {
+            if (!empty($row['banner_data'])) {
+                $bdata = json_decode($row['banner_data'], true);
+                if (is_array($bdata)) {
+                    foreach ($bdata as $b) {
+                        $banners[] = array(
+                            'title' => $row['title'],
+                            'link' => isset($b['link']) ? $b['link'] : '',
+                            'image' => isset($b['image']) ? $b['image'] : ''
+                        );
+                    }
+                }
+            }
+        }
+        return $banners;
     }
 
     public function getBanner($banner_id, $customer_group_id = 0)
     {
-        $sql = "SELECT b.* FROM `" . DB_PREFIX . "customer_segment_banner` b";
+        $sql = "SELECT p.* FROM `" . DB_PREFIX . "customer_segment_promotion` p";
         if ($customer_group_id) {
-            $sql .= " JOIN `" . DB_PREFIX . "customer_segment_banner_group` bg ON (b.banner_id = bg.banner_id) WHERE bg.customer_group_id = '" . (int) $customer_group_id . "' AND b.banner_id = '" . (int) $banner_id . "'";
+            $sql .= " JOIN `" . DB_PREFIX . "customer_segment_promotion_group` pg ON (p.promotion_id = pg.promotion_id) WHERE pg.customer_group_id = '" . (int) $customer_group_id . "' AND p.promotion_id = '" . (int) $banner_id . "'";
         } else {
-            $sql .= " WHERE b.banner_id = '" . (int) $banner_id . "'";
+            $sql .= " WHERE p.promotion_id = '" . (int) $banner_id . "'";
         }
-        $sql .= " AND b.status = '1'";
+        $sql .= " AND p.status = '1' AND p.visual_type = 'banner'";
         $query = $this->db->query($sql);
         return $query->row;
     }
 
     public function getSliders($customer_group_id)
     {
-        $query = $this->db->query("SELECT s.* FROM `" . DB_PREFIX . "customer_segment_slider` s JOIN `" . DB_PREFIX . "customer_segment_slider_group` sg ON (s.slider_id = sg.slider_id) WHERE sg.customer_group_id = '" . (int) $customer_group_id . "' AND s.status = '1' ORDER BY s.slider_id ASC");
+        $query = $this->db->query("SELECT p.*, p.promotion_id AS slider_id FROM `" . DB_PREFIX . "customer_segment_promotion` p JOIN `" . DB_PREFIX . "customer_segment_promotion_group` pg ON (p.promotion_id = pg.promotion_id) WHERE pg.customer_group_id = '" . (int) $customer_group_id . "' AND p.status = '1' AND p.visual_type = 'product_slider' ORDER BY p.promotion_id ASC");
 
         $sliders = array();
         $this->load->model('catalog/product');
@@ -54,8 +70,8 @@ class ModelExtensionModuleCustomerSegment extends Model
             }
 
             $sliders[] = array(
-                'slider_id' => $result['slider_id'],
-                'name' => $result['name'],
+                'slider_id' => $result['promotion_id'],
+                'name' => $result['title'],
                 'product_ids' => $result['product_ids'],
                 'products' => $products,
             );
@@ -66,13 +82,13 @@ class ModelExtensionModuleCustomerSegment extends Model
 
     public function getSlider($slider_id, $customer_group_id = 0)
     {
-        $sql = "SELECT s.* FROM `" . DB_PREFIX . "customer_segment_slider` s";
+        $sql = "SELECT p.* FROM `" . DB_PREFIX . "customer_segment_promotion` p";
         if ($customer_group_id) {
-            $sql .= " JOIN `" . DB_PREFIX . "customer_segment_slider_group` sg ON (s.slider_id = sg.slider_id) WHERE sg.customer_group_id = '" . (int) $customer_group_id . "' AND s.slider_id = '" . (int) $slider_id . "'";
+            $sql .= " JOIN `" . DB_PREFIX . "customer_segment_promotion_group` pg ON (p.promotion_id = pg.promotion_id) WHERE pg.customer_group_id = '" . (int) $customer_group_id . "' AND p.promotion_id = '" . (int) $slider_id . "'";
         } else {
-            $sql .= " WHERE s.slider_id = '" . (int) $slider_id . "'";
+            $sql .= " WHERE p.promotion_id = '" . (int) $slider_id . "'";
         }
-        $sql .= " AND s.status = '1'";
+        $sql .= " AND p.status = '1' AND p.visual_type = 'product_slider'";
         $query = $this->db->query($sql);
 
         if (!$query->row)
@@ -106,8 +122,8 @@ class ModelExtensionModuleCustomerSegment extends Model
         }
 
         return array(
-            'slider_id' => $query->row['slider_id'],
-            'name' => $query->row['name'],
+            'slider_id' => $query->row['promotion_id'],
+            'name' => $query->row['title'],
             'product_ids' => $query->row['product_ids'],
             'products' => $products
         );
@@ -246,9 +262,9 @@ class ModelExtensionModuleCustomerSegment extends Model
         $this->db->query("INSERT INTO `" . DB_PREFIX . "customer_segment_fcm_token` SET customer_id = '" . (int) $customer_id . "', token = '" . $this->db->escape($token) . "', date_added = NOW()");
     }
 
-    public function getRestrictedItems()
+    public function getSpecialItems()
     {
-        $query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "customer_segment_restricted` ");
+        $query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "customer_segment_special` ");
         $restricted = array('product' => array(), 'category' => array());
         foreach ($query->rows as $row) {
             $restricted[$row['item_type']][$row['item_id']] = json_decode($row['customer_group_ids'], true);
@@ -268,6 +284,52 @@ class ModelExtensionModuleCustomerSegment extends Model
             }
         }
         return $combos;
+    }
+
+
+    public function getProductDiscount($product_id, $customer_group_id)
+    {
+        $sql = "SELECT p.* FROM `" . DB_PREFIX . "customer_segment_promotion` p 
+                JOIN `" . DB_PREFIX . "customer_segment_promotion_group` pg ON (p.promotion_id = pg.promotion_id) 
+                WHERE pg.customer_group_id = '" . (int)$customer_group_id . "' 
+                AND p.type = 'cart_discount' 
+                AND p.status = '1'";
+        
+        $query = $this->db->query($sql);
+        
+        $best_discount = array('value' => 0, 'type' => 'percent');
+
+        foreach ($query->rows as $promo) {
+            $applies = false;
+            if ($promo['scope'] == 'all') {
+                $applies = true;
+            } elseif ($promo['scope'] == 'specific_products') {
+                $promo_pids = explode(',', $promo['product_ids']);
+                if (in_array($product_id, $promo_pids)) {
+                    $applies = true;
+                }
+            } elseif ($promo['scope'] == 'specific_categories') {
+                $promo_cids = explode(',', $promo['category_ids']);
+                $product_categories = $this->db->query("SELECT category_id FROM " . DB_PREFIX . "product_to_category WHERE product_id = '" . (int)$product_id . "'")->rows;
+                foreach ($product_categories as $pc) {
+                    if (in_array($pc['category_id'], $promo_cids)) {
+                        $applies = true;
+                        break;
+                    }
+                }
+            }
+
+            if ($applies) {
+                if ($promo['discount_value'] > $best_discount['value']) {
+                    $best_discount = array(
+                        'value' => (float)$promo['discount_value'],
+                        'type'  => $promo['discount_type']
+                    );
+                }
+            }
+        }
+
+        return $best_discount;
     }
 
     public function getBestCartDiscount($group_ids, $cart_products)

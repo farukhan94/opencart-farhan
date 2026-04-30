@@ -84,6 +84,7 @@ class ModelExtensionModuleCustomerSegment extends Model
 		  `title`           VARCHAR(255) NOT NULL,
 		  `description`     TEXT DEFAULT NULL,
 		  `type`            VARCHAR(20) NOT NULL DEFAULT 'coupon',
+		  `visual_type`     VARCHAR(50) NOT NULL DEFAULT 'none',
 		  `discount_type`   VARCHAR(10) DEFAULT 'percent',
 		  `discount_value`  DECIMAL(15,4) DEFAULT 0.0000,
 		  `scope`           VARCHAR(25) DEFAULT 'all',
@@ -95,6 +96,7 @@ class ModelExtensionModuleCustomerSegment extends Model
 		  `date_end`        DATE DEFAULT NULL,
 		  `uses_total`      INT(11) DEFAULT 0,
 		  `uses_customer`   INT(11) DEFAULT 1,
+		  `coupon_basis_id`  INT(11) DEFAULT 0,
 		  `status`          TINYINT(1) NOT NULL DEFAULT 1,
 		  PRIMARY KEY (`promotion_id`)
 		) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;");
@@ -116,8 +118,8 @@ class ModelExtensionModuleCustomerSegment extends Model
 		  UNIQUE KEY `promo_customer` (`promotion_id`, `customer_id`)
 		) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;");
 
-		// RESTRICTED CONTENT
-		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "customer_segment_restricted` (
+		// SPECIAL ITEMS
+		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "customer_segment_special` (
 		  `id`                 INT(11) NOT NULL AUTO_INCREMENT,
 		  `item_type`          VARCHAR(10) NOT NULL,
 		  `item_id`            INT(11) NOT NULL,
@@ -168,7 +170,9 @@ class ModelExtensionModuleCustomerSegment extends Model
 			'date_start'     => "DATE DEFAULT NULL",
 			'date_end'       => "DATE DEFAULT NULL",
 			'uses_total'     => "INT(11) DEFAULT 0",
-			'uses_customer'  => "INT(11) DEFAULT 1"
+			'uses_customer'  => "INT(11) DEFAULT 1",
+			'banner_data'    => "TEXT DEFAULT NULL",
+			'visual_type'    => "VARCHAR(50) NOT NULL DEFAULT 'none'"
 		);
 
 		foreach ($promo_columns as $col => $def) {
@@ -176,6 +180,11 @@ class ModelExtensionModuleCustomerSegment extends Model
 			if (!$query->num_rows) {
 				$this->db->query("ALTER TABLE `" . DB_PREFIX . "customer_segment_promotion` ADD COLUMN `" . $col . "` " . $def . ";");
 			}
+		}
+
+		$query = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "customer_segment_promotion` LIKE 'coupon_basis_id'");
+		if (!$query->num_rows) {
+			$this->db->query("ALTER TABLE `" . DB_PREFIX . "customer_segment_promotion` ADD COLUMN `coupon_basis_id` INT(11) DEFAULT 0 AFTER `code`;");
 		}
 
 		// Ensure columns exist for customer table
@@ -204,6 +213,13 @@ class ModelExtensionModuleCustomerSegment extends Model
 		$this->model_setting_event->addEvent('module_customer_segment', 'catalog/model/catalog/product/getProducts/after', 'extension/module/customer_segment/eventCheckProduct');
 		$this->model_setting_event->addEvent('module_customer_segment', 'catalog/model/catalog/category/getCategory/after', 'extension/module/customer_segment/eventCheckCategory');
 		$this->model_setting_event->addEvent('module_customer_segment', 'catalog/model/catalog/category/getCategories/after', 'extension/module/customer_segment/eventCheckCategory');
+
+		// Enable the Order Total extension by default
+		$this->db->query("DELETE FROM `" . DB_PREFIX . "setting` WHERE `key` = 'total_customer_segment_discount_status'");
+		$this->db->query("INSERT INTO `" . DB_PREFIX . "setting` SET `code` = 'total_customer_segment_discount', `key` = 'total_customer_segment_discount_status', `value` = '1', `serialized` = '0', `store_id` = '0'");
+		
+		$this->db->query("DELETE FROM `" . DB_PREFIX . "setting` WHERE `key` = 'total_customer_segment_discount_sort_order'");
+		$this->db->query("INSERT INTO `" . DB_PREFIX . "setting` SET `code` = 'total_customer_segment_discount', `key` = 'total_customer_segment_discount_sort_order', `value` = '4', `serialized` = '0', `store_id` = '0'");
 	}
 
 	public function uninstall()
@@ -219,7 +235,7 @@ class ModelExtensionModuleCustomerSegment extends Model
 		$this->db->query("DROP TABLE IF EXISTS `" . DB_PREFIX . "customer_segment_promotion`;");
 		$this->db->query("DROP TABLE IF EXISTS `" . DB_PREFIX . "customer_segment_promotion_group`;");
 		$this->db->query("DROP TABLE IF EXISTS `" . DB_PREFIX . "customer_segment_coupon_generated`;");
-		$this->db->query("DROP TABLE IF EXISTS `" . DB_PREFIX . "customer_segment_restricted`;");
+		$this->db->query("DROP TABLE IF EXISTS `" . DB_PREFIX . "customer_segment_special`;");
 		$this->db->query("DROP TABLE IF EXISTS `" . DB_PREFIX . "customer_segment_combo`;");
 
 		$this->load->model('setting/event');
@@ -426,13 +442,38 @@ class ModelExtensionModuleCustomerSegment extends Model
 	// ----------------------------------------------------------------
 	public function getBanners($customer_group_id = 0)
 	{
-		$sql = "SELECT b.*, GROUP_CONCAT(bg.customer_group_id) as group_ids FROM `" . DB_PREFIX . "customer_segment_banner` b LEFT JOIN `" . DB_PREFIX . "customer_segment_banner_group` bg ON (b.banner_id = bg.banner_id)";
+		$sql = "SELECT b.* FROM `" . DB_PREFIX . "customer_segment_banner` b";
 		if ($customer_group_id) {
-			$sql .= " WHERE bg.customer_group_id = '" . (int) $customer_group_id . "'";
+			$sql .= " JOIN `" . DB_PREFIX . "customer_segment_banner_group` bg ON (b.banner_id = bg.banner_id) WHERE bg.customer_group_id = '" . (int) $customer_group_id . "'";
 		}
-		$sql .= " GROUP BY b.banner_id ORDER BY b.banner_id ASC";
+		$sql .= " ORDER BY b.banner_id ASC";
 		$query = $this->db->query($sql);
-		return $query->rows;
+
+		$results = array();
+		$this->load->model('customer/customer_group');
+
+		foreach ($query->rows as $row) {
+			$groups = array();
+			$group_query = $this->db->query("SELECT customer_group_id FROM `" . DB_PREFIX . "customer_segment_banner_group` WHERE banner_id = '" . (int)$row['banner_id'] . "'");
+			foreach ($group_query->rows as $g) {
+				$group_info = $this->model_customer_customer_group->getCustomerGroup($g['customer_group_id']);
+				if ($group_info) {
+					$groups[$g['customer_group_id']] = $group_info['name'];
+				}
+			}
+			$row['group_ids'] = $groups;
+			
+			// Add thumb
+			$this->load->model('tool/image');
+			if ($row['image'] && is_file(DIR_IMAGE . $row['image'])) {
+				$row['thumb'] = $this->model_tool_image->resize($row['image'], 100, 100);
+			} else {
+				$row['thumb'] = $this->model_tool_image->resize('no_image.png', 100, 100);
+			}
+
+			$results[] = $row;
+		}
+		return $results;
 	}
 
 	public function getBanner($banner_id)
@@ -487,13 +528,29 @@ class ModelExtensionModuleCustomerSegment extends Model
 	// ----------------------------------------------------------------
 	public function getSliders($customer_group_id = 0)
 	{
-		$sql = "SELECT s.*, GROUP_CONCAT(sg.customer_group_id) as group_ids FROM `" . DB_PREFIX . "customer_segment_slider` s LEFT JOIN `" . DB_PREFIX . "customer_segment_slider_group` sg ON (s.slider_id = sg.slider_id)";
+		$sql = "SELECT s.* FROM `" . DB_PREFIX . "customer_segment_slider` s";
 		if ($customer_group_id) {
-			$sql .= " WHERE sg.customer_group_id = '" . (int) $customer_group_id . "'";
+			$sql .= " JOIN `" . DB_PREFIX . "customer_segment_slider_group` sg ON (s.slider_id = sg.slider_id) WHERE sg.customer_group_id = '" . (int) $customer_group_id . "'";
 		}
-		$sql .= " GROUP BY s.slider_id ORDER BY s.slider_id ASC";
+		$sql .= " ORDER BY s.slider_id ASC";
 		$query = $this->db->query($sql);
-		return $query->rows;
+
+		$results = array();
+		$this->load->model('customer/customer_group');
+
+		foreach ($query->rows as $row) {
+			$groups = array();
+			$group_query = $this->db->query("SELECT customer_group_id FROM `" . DB_PREFIX . "customer_segment_slider_group` WHERE slider_id = '" . (int)$row['slider_id'] . "'");
+			foreach ($group_query->rows as $g) {
+				$group_info = $this->model_customer_customer_group->getCustomerGroup($g['customer_group_id']);
+				if ($group_info) {
+					$groups[$g['customer_group_id']] = $group_info['name'];
+				}
+			}
+			$row['group_ids'] = $groups;
+			$results[] = $row;
+		}
+		return $results;
 	}
 
 	public function getSlider($slider_id)
@@ -507,6 +564,7 @@ class ModelExtensionModuleCustomerSegment extends Model
 		$this->db->query("INSERT INTO `" . DB_PREFIX . "customer_segment_slider` SET
 			name              = '" . $this->db->escape($data['name']) . "',
 			product_ids       = '" . $this->db->escape(isset($data['product_ids']) ? $data['product_ids'] : '') . "',
+			banner_data       = '" . $this->db->escape(isset($data['banner_data']) ? json_encode($data['banner_data']) : '') . "',
 			status            = '" . (int) (isset($data['status']) ? $data['status'] : 1) . "'");
 		$slider_id = $this->db->getLastId();
 
@@ -546,19 +604,67 @@ class ModelExtensionModuleCustomerSegment extends Model
 	// ----------------------------------------------------------------
 	public function getPromotions($customer_group_id = 0)
 	{
-		$sql = "SELECT p.*, GROUP_CONCAT(pg.customer_group_id) as group_ids FROM `" . DB_PREFIX . "customer_segment_promotion` p LEFT JOIN `" . DB_PREFIX . "customer_segment_promotion_group` pg ON (p.promotion_id = pg.promotion_id)";
+		$sql = "SELECT p.* FROM `" . DB_PREFIX . "customer_segment_promotion` p";
 		if ($customer_group_id) {
-			$sql .= " WHERE pg.customer_group_id = '" . (int) $customer_group_id . "'";
+			$sql .= " JOIN `" . DB_PREFIX . "customer_segment_promotion_group` pg ON (p.promotion_id = pg.promotion_id) WHERE pg.customer_group_id = '" . (int) $customer_group_id . "'";
 		}
-		$sql .= " GROUP BY p.promotion_id ORDER BY p.promotion_id ASC";
+		$sql .= " ORDER BY p.promotion_id ASC";
 		$query = $this->db->query($sql);
-		return $query->rows;
+		
+		$results = array();
+		$this->load->model('customer/customer_group');
+
+		foreach ($query->rows as $row) {
+			$groups = array();
+			$group_query = $this->db->query("SELECT customer_group_id FROM `" . DB_PREFIX . "customer_segment_promotion_group` WHERE promotion_id = '" . (int)$row['promotion_id'] . "'");
+			foreach ($group_query->rows as $g) {
+				$group_info = $this->model_customer_customer_group->getCustomerGroup($g['customer_group_id']);
+				if ($group_info) {
+					$groups[$g['customer_group_id']] = $group_info['name'];
+				}
+			}
+			$row['group_ids'] = $groups;
+			$results[] = $row;
+		}
+		return $results;
 	}
 
 	public function getPromotion($promotion_id)
 	{
-		$query = $this->db->query("SELECT p.*, GROUP_CONCAT(pg.customer_group_id) as group_ids FROM `" . DB_PREFIX . "customer_segment_promotion` p LEFT JOIN `" . DB_PREFIX . "customer_segment_promotion_group` pg ON (p.promotion_id = pg.promotion_id) WHERE p.promotion_id = '" . (int) $promotion_id . "' GROUP BY p.promotion_id");
-		return $query->row;
+		$query = $this->db->query("SELECT p.* FROM `" . DB_PREFIX . "customer_segment_promotion` p WHERE p.promotion_id = '" . (int) $promotion_id . "'");
+		
+		if ($query->num_rows) {
+			$row = $query->row;
+			$groups = array();
+			$this->load->model('customer/customer_group');
+			$group_query = $this->db->query("SELECT customer_group_id FROM `" . DB_PREFIX . "customer_segment_promotion_group` WHERE promotion_id = '" . (int)$promotion_id . "'");
+			foreach ($group_query->rows as $g) {
+				$group_info = $this->model_customer_customer_group->getCustomerGroup($g['customer_group_id']);
+				if ($group_info) {
+					$groups[$g['customer_group_id']] = $group_info['name'];
+				}
+			}
+			$row['group_ids'] = $groups;
+
+			// Handle banner_data thumbs
+			if ($row['banner_data']) {
+				$this->load->model('tool/image');
+				$bdata = json_decode($row['banner_data'], true);
+				if (is_array($bdata)) {
+					foreach ($bdata as &$bitem) {
+						if (isset($bitem['image']) && is_file(DIR_IMAGE . $bitem['image'])) {
+							$bitem['thumb'] = $this->model_tool_image->resize($bitem['image'], 100, 100);
+						} else {
+							$bitem['thumb'] = $this->model_tool_image->resize('no_image.png', 100, 100);
+						}
+					}
+					$row['banner_data'] = json_encode($bdata);
+				}
+			}
+
+			return $row;
+		}
+		return array();
 	}
 
 	public function addPromotion($data)
@@ -567,6 +673,7 @@ class ModelExtensionModuleCustomerSegment extends Model
 			title             = '" . $this->db->escape($data['title']) . "',
 			description       = '" . $this->db->escape($data['description']) . "',
 			type              = '" . $this->db->escape($data['type']) . "',
+			visual_type       = '" . $this->db->escape(isset($data['visual_type']) ? $data['visual_type'] : 'none') . "',
 			discount_type     = '" . $this->db->escape($data['discount_type']) . "',
 			discount_value    = '" . (float)$data['discount_value'] . "',
 			scope             = '" . $this->db->escape($data['scope']) . "',
@@ -574,10 +681,12 @@ class ModelExtensionModuleCustomerSegment extends Model
 			category_ids      = '" . $this->db->escape(isset($data['category_ids']) ? $data['category_ids'] : '') . "',
 			coupon_prefix     = '" . $this->db->escape(isset($data['coupon_prefix']) ? $data['coupon_prefix'] : '') . "',
 			code              = '" . $this->db->escape(isset($data['code']) ? $data['code'] : '') . "',
-			date_start        = '" . $this->db->escape($data['date_start']) . "',
-			date_end          = '" . $this->db->escape($data['date_end']) . "',
-			uses_total        = '" . (int)$data['uses_total'] . "',
-			uses_customer     = '" . (int)$data['uses_customer'] . "',
+			coupon_basis_id   = '" . (int)(isset($data['coupon_basis_id']) ? $data['coupon_basis_id'] : 0) . "',
+			date_start        = '" . $this->db->escape(isset($data['date_start']) ? $data['date_start'] : '') . "',
+			date_end          = '" . $this->db->escape(isset($data['date_end']) ? $data['date_end'] : '') . "',
+			uses_total        = '" . (isset($data['uses_total']) ? (int)$data['uses_total'] : 0) . "',
+			uses_customer     = '" . (isset($data['uses_customer']) ? (int)$data['uses_customer'] : 1) . "',
+			banner_data       = '" . $this->db->escape(isset($data['banner_data']) ? json_encode($data['banner_data']) : '') . "',
 			status            = '" . (int) (isset($data['status']) ? $data['status'] : 1) . "'");
 		$promotion_id = $this->db->getLastId();
 
@@ -596,6 +705,7 @@ class ModelExtensionModuleCustomerSegment extends Model
 			title             = '" . $this->db->escape($data['title']) . "',
 			description       = '" . $this->db->escape($data['description']) . "',
 			type              = '" . $this->db->escape($data['type']) . "',
+			visual_type       = '" . $this->db->escape(isset($data['visual_type']) ? $data['visual_type'] : 'none') . "',
 			discount_type     = '" . $this->db->escape($data['discount_type']) . "',
 			discount_value    = '" . (float)$data['discount_value'] . "',
 			scope             = '" . $this->db->escape($data['scope']) . "',
@@ -603,10 +713,12 @@ class ModelExtensionModuleCustomerSegment extends Model
 			category_ids      = '" . $this->db->escape(isset($data['category_ids']) ? $data['category_ids'] : '') . "',
 			coupon_prefix     = '" . $this->db->escape(isset($data['coupon_prefix']) ? $data['coupon_prefix'] : '') . "',
 			code              = '" . $this->db->escape(isset($data['code']) ? $data['code'] : '') . "',
-			date_start        = '" . $this->db->escape($data['date_start']) . "',
-			date_end          = '" . $this->db->escape($data['date_end']) . "',
-			uses_total        = '" . (int)$data['uses_total'] . "',
-			uses_customer     = '" . (int)$data['uses_customer'] . "',
+			coupon_basis_id   = '" . (int)(isset($data['coupon_basis_id']) ? $data['coupon_basis_id'] : 0) . "',
+			date_start        = '" . $this->db->escape(isset($data['date_start']) ? $data['date_start'] : '') . "',
+			date_end          = '" . $this->db->escape(isset($data['date_end']) ? $data['date_end'] : '') . "',
+			uses_total        = '" . (isset($data['uses_total']) ? (int)$data['uses_total'] : 0) . "',
+			uses_customer     = '" . (isset($data['uses_customer']) ? (int)$data['uses_customer'] : 1) . "',
+			banner_data       = '" . $this->db->escape(isset($data['banner_data']) ? json_encode($data['banner_data']) : '') . "',
 			status            = '" . (int) (isset($data['status']) ? $data['status'] : 1) . "'
 			WHERE promotion_id = '" . (int) $promotion_id . "'");
 
@@ -636,25 +748,25 @@ class ModelExtensionModuleCustomerSegment extends Model
 		$this->db->query("DELETE FROM `" . DB_PREFIX . "customer_segment_promotion` WHERE promotion_id = '" . (int) $promotion_id . "'");
 	}
 
-	// RESTRICTED CONTENT
-	public function getRestrictions()
+	// SPECIAL ITEMS
+	public function getSpecialItems()
 	{
-		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "customer_segment_restricted` ORDER BY id ASC");
+		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "customer_segment_special` ORDER BY id ASC");
 		return $query->rows;
 	}
 
-	public function addRestriction($data)
+	public function addSpecialItem($data)
 	{
-		$this->db->query("INSERT INTO `" . DB_PREFIX . "customer_segment_restricted` SET
+		$this->db->query("INSERT INTO `" . DB_PREFIX . "customer_segment_special` SET
 			item_type          = '" . $this->db->escape($data['item_type']) . "',
 			item_id            = '" . (int)$data['item_id'] . "',
 			customer_group_ids = '" . $this->db->escape(json_encode($data['group_ids'])) . "'
 			ON DUPLICATE KEY UPDATE customer_group_ids = '" . $this->db->escape(json_encode($data['group_ids'])) . "'");
 	}
 
-	public function deleteRestriction($id)
+	public function deleteSpecialItem($id)
 	{
-		$this->db->query("DELETE FROM `" . DB_PREFIX . "customer_segment_restricted` WHERE id = '" . (int)$id . "'");
+		$this->db->query("DELETE FROM `" . DB_PREFIX . "customer_segment_special` WHERE id = '" . (int)$id . "'");
 	}
 
 	// COMBOS
