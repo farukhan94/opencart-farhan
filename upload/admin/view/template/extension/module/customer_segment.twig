@@ -449,6 +449,65 @@
         <div class="form-group"><label class="col-sm-3 control-label">Description</label><div class="col-sm-9"><textarea name="description" id="promo-desc" class="form-control" rows="2"></textarea></div></div>
         
         <div class="form-group">
+          <label class="col-sm-3 control-label">Promotion Schedule</label>
+          <div class="col-sm-9">
+            <div class="row">
+              <div class="col-sm-6">
+                <div class="input-group date">
+                  <span class="input-group-addon">Start</span>
+                  <input type="text" name="date_start" id="promo-date-start" value="" placeholder="YYYY-MM-DD" data-date-format="YYYY-MM-DD" class="form-control" />
+                  <span class="input-group-btn"><button class="btn btn-default" type="button"><i class="fa fa-calendar"></i></button></span>
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <div class="input-group date">
+                  <span class="input-group-addon">End</span>
+                  <input type="text" name="date_end" id="promo-date-end" value="" placeholder="YYYY-MM-DD" data-date-format="YYYY-MM-DD" class="form-control" />
+                  <span class="input-group-btn"><button class="btn btn-default" type="button"><i class="fa fa-calendar"></i></button></span>
+                </div>
+              </div>
+            </div>
+            <div class="help-block">Promotion is only active within these boundaries.</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Repeat Logic</label>
+          <div class="col-sm-9">
+             <div class="well well-sm" style="background: #fdfdfd;">
+               <div class="pull-right text-muted" style="font-size: 11px;">
+                 <i class="fa fa-clock-o"></i> Store Time: <strong id="live-server-time">{{ server_time }}</strong> ({{ server_timezone }})
+               </div>
+               <div style="margin-bottom:10px;">
+                 <strong>Active Days:</strong><br/>
+                 <label class="checkbox-inline"><input type="checkbox" name="schedule_days[]" value="1" checked> Mon</label>
+                 <label class="checkbox-inline"><input type="checkbox" name="schedule_days[]" value="2" checked> Tue</label>
+                 <label class="checkbox-inline"><input type="checkbox" name="schedule_days[]" value="3" checked> Wed</label>
+                 <label class="checkbox-inline"><input type="checkbox" name="schedule_days[]" value="4" checked> Thu</label>
+                 <label class="checkbox-inline"><input type="checkbox" name="schedule_days[]" value="5" checked> Fri</label>
+                 <label class="checkbox-inline"><input type="checkbox" name="schedule_days[]" value="6" checked> Sat</label>
+                 <label class="checkbox-inline"><input type="checkbox" name="schedule_days[]" value="0" checked> Sun</label>
+               </div>
+               <div style="margin-bottom:10px;">
+                 <strong>Active Time Slots:</strong>
+                 <div id="promo-time-slots" style="margin-bottom: 5px;"></div>
+                 <button type="button" onclick="addTimeSlot();" class="btn btn-primary btn-xs"><i class="fa fa-plus-circle"></i> Add Time Slot</button>
+                 <div class="help-block" style="font-size: 11px;">If no slots are added, it will be active all day (00:00 - 23:59).</div>
+               </div>
+               <div style="margin-top:10px;">
+                 <strong>Exclude Specific Dates:</strong>
+                 <div class="input-group date">
+                    <input type="text" id="input-exclude-date" placeholder="Choose date to exclude..." class="form-control" />
+                    <span class="input-group-btn"><button type="button" onclick="addExcludeDate();" class="btn btn-primary"><i class="fa fa-plus"></i></button></span>
+                 </div>
+                 <div id="promo-exclude-list" style="margin-top:5px;"></div>
+               </div>
+             </div>
+             <input type="hidden" name="schedule_config" id="promo-schedule-config" />
+          </div>
+        </div>
+        
+        <div class="form-group">
           <label class="col-sm-3 control-label">Visual Type</label>
           <div class="col-sm-9">
             <select name="visual_type" id="promo-visual-type" class="form-control" onchange="togglePromoType();">
@@ -457,6 +516,17 @@
               <option value="product_slider">Product Slider</option>
             </select>
           </div>
+        </div>
+
+        <!-- Banner Settings -->
+        <div id="promo-banner-settings" style="display:none; border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; background: #fafafa;">
+           <div class="table-responsive">
+             <table class="table table-bordered table-hover" id="banner-image-table">
+               <thead><tr><th>Image</th><th>Link</th><th>Action</th></tr></thead>
+               <tbody></tbody>
+               <tfoot><tr><td colspan="2"></td><td><button type="button" onclick="addBannerImage();" class="btn btn-primary"><i class="fa fa-plus-circle"></i></button></td></tr></tfoot>
+             </table>
+           </div>
         </div>
 
         <div class="form-group">
@@ -473,16 +543,7 @@
 
 
         
-        <!-- Banner Settings -->
-        <div id="promo-banner-settings" style="display:none;">
-           <div class="table-responsive">
-             <table class="table table-bordered table-hover" id="banner-image-table">
-               <thead><tr><th>Image</th><th>Link</th><th>Action</th></tr></thead>
-               <tbody></tbody>
-               <tfoot><tr><td colspan="2"></td><td><button type="button" onclick="addBannerImage();" class="btn btn-primary"><i class="fa fa-plus-circle"></i></button></td></tr></tfoot>
-             </table>
-           </div>
-        </div>
+
 
         <!-- Cart Discount Settings -->
         <div id="promo-discount-settings" style="display:none;">
@@ -563,25 +624,7 @@
           </div>
         </fieldset>
 
-        <div class="form-group">
-          <label class="col-sm-3 control-label">Date Start</label>
-          <div class="col-sm-9">
-            <div class="input-group date">
-              <input type="text" name="date_start" id="promo-date-start" value="" placeholder="YYYY-MM-DD" data-date-format="YYYY-MM-DD" class="form-control" />
-              <span class="input-group-btn"><button class="btn btn-default" type="button"><i class="fa fa-calendar"></i></button></span>
-            </div>
-          </div>
-        </div>
 
-        <div class="form-group">
-          <label class="col-sm-3 control-label">Date End</label>
-          <div class="col-sm-9">
-            <div class="input-group date">
-              <input type="text" name="date_end" id="promo-date-end" value="" placeholder="YYYY-MM-DD" data-date-format="YYYY-MM-DD" class="form-control" />
-              <span class="input-group-btn"><button class="btn btn-default" type="button"><i class="fa fa-calendar"></i></button></span>
-            </div>
-          </div>
-        </div>
 
         <div class="form-group"><label class="col-sm-3 control-label">Status</label><div class="col-sm-9"><select name="status" id="promo-status" class="form-control"><option value="1">Enabled</option><option value="0">Disabled</option></select></div></div>
       </form>
@@ -1787,10 +1830,15 @@ function openPromoModal(promo_id) {
     $('#form-promo')[0].reset();
     $('#promo-group-list, #promo-category-list, #promo-product-list').empty();
     $('#banner-image-table tbody').empty();
+    $('#promo-exclude-list').empty();
     $('#promo-notification-title').val('');
     $('#promo-notification-body').val('');
     $('#promo-id').val(promo_id || '');
+    $('#promo-time-slots').empty();
     banner_row = 0;
+    
+    // Set default schedule days
+    $('#form-promo input[name="schedule_days[]"]').prop('checked', true);
 
     if (promo_id) {
         $.ajax({ 
@@ -1807,10 +1855,40 @@ function openPromoModal(promo_id) {
                     $('#promo-discount-value').val(p.discount_value);
                     $('#promo-discount-type').val(p.discount_type);
                     $('#promo-code').val(p.code);
-                    $('#promo-date-start').val(p.date_start);
-                    $('#promo-date-end').val(p.date_end);
+                    $('#promo-date-start').val(p.date_start ? p.date_start.substring(0, 10) : '');
+                    $('#promo-date-end').val(p.date_end ? p.date_end.substring(0, 10) : '');
                     $('#promo-notification-title').val(p.notification_title);
                     $('#promo-notification-body').val(p.notification_body);
+
+                    if (p.schedule_config) {
+                        try {
+                            var config_json = p.schedule_config;
+                            // Handle potential HTML entities
+                            if (config_json.indexOf('&quot;') !== -1) {
+                                config_json = $('<div/>').html(config_json).text();
+                            }
+                            var config = JSON.parse(config_json);
+                            if (config.days) {
+                                $('#form-promo input[name="schedule_days[]"]').prop('checked', false);
+                                $.each(config.days, function(i, day) {
+                                    $('#form-promo input[name="schedule_days[]"][value="' + day + '"]').prop('checked', true);
+                                });
+                            }
+                            if (config.time_slots && config.time_slots.length) {
+                                $.each(config.time_slots, function(i, slot) {
+                                    addTimeSlot(slot.start, slot.end);
+                                });
+                            } else if (config.time_start || config.time_end) {
+                                // Legacy fallback
+                                addTimeSlot(config.time_start || '00:00', config.time_end || '23:59');
+                            }
+                            if (config.excluded_dates) {
+                                $.each(config.excluded_dates, function(i, date) {
+                                    addExcludeDate(date);
+                                });
+                            }
+                        } catch(e) { console.error('Error parsing schedule_config:', e); }
+                    }
                     
                     if (p.group_ids) { 
                         $.each(p.group_ids, function(id, name) { 
@@ -1902,6 +1980,25 @@ function savePromo() {
     var category_ids = [];
     $('#promo-category-list input[name="category_ids[]"]').each(function() { category_ids.push($(this).val()); });
     $('#promo-category-ids').val(category_ids.join(','));
+
+    // Prepare schedule_config
+    var schedule = {
+        days: [],
+        time_slots: [],
+        excluded_dates: []
+    };
+    $('#form-promo input[name="schedule_days[]"]:checked').each(function() { schedule.days.push($(this).val()); });
+    
+    $('#promo-time-slots .time-slot-row').each(function() {
+        var start = $(this).find('input').first().val();
+        var end = $(this).find('input').last().val();
+        if (start && end) {
+            schedule.time_slots.push({ start: start, end: end });
+        }
+    });
+
+    $('#promo-exclude-list input[name="excluded_dates[]"]').each(function() { schedule.excluded_dates.push($(this).val()); });
+    $('#promo-schedule-config').val(JSON.stringify(schedule));
 
     $.ajax({
         url: 'index.php?route=extension/module/customer_segment/savePromotion&user_token={{ user_token }}',
@@ -2155,9 +2252,68 @@ $('#combo-product-list').delegate('.fa-minus-circle', 'click', function() {
     syncComboProductIds();
 });
 
+function addExcludeDate(date) {
+    var val = date || $('#input-exclude-date').val();
+    if (!val) return;
+    
+    var html = '<div class="label label-danger" style="display:inline-block; margin:2px; padding:5px;">';
+    html += '<i class="fa fa-calendar"></i> ' + val;
+    html += ' <i class="fa fa-times" onclick="$(this).parent().remove();" style="cursor:pointer; margin-left:5px;"></i>';
+    html += '<input type="hidden" name="excluded_dates[]" value="' + val + '" />';
+    html += '</div>';
+    
+    $('#promo-exclude-list').append(html);
+    $('#input-exclude-date').val('');
+}
+
+function addTimeSlot(start, end) {
+    var s = start || '00:00';
+    var e = end || '23:59';
+    var html = '<div class="row time-slot-row" style="margin-bottom: 5px;">';
+    html += '  <div class="col-sm-5"><div class="input-group time"><input type="text" value="' + s + '" class="form-control" data-date-format="HH:mm" /><span class="input-group-btn"><button class="btn btn-default" type="button"><i class="fa fa-clock-o"></i></button></span></div></div>';
+    html += '  <div class="col-sm-5"><div class="input-group time"><input type="text" value="' + e + '" class="form-control" data-date-format="HH:mm" /><span class="input-group-btn"><button class="btn btn-default" type="button"><i class="fa fa-clock-o"></i></button></span></div></div>';
+    html += '  <div class="col-sm-2 text-right"><button type="button" onclick="$(this).closest(\'.time-slot-row\').remove();" class="btn btn-danger btn-sm"><i class="fa fa-minus-circle"></i></button></div>';
+    html += '</div>';
+    
+    var $html = $(html);
+    $('#promo-time-slots').append($html);
+    
+    $html.find('.time').datetimepicker({
+        language: '{{ datepicker }}',
+        pickDate: false,
+        pickTime: true,
+        icons: picker_icons
+    });
+}
+
+// Live Clock Logic
+var currentStoreTime = new Date('{{ server_time|replace({'-': '/'}) }}'); 
+setInterval(function() {
+    currentStoreTime.setSeconds(currentStoreTime.getSeconds() + 1);
+    var Y = currentStoreTime.getFullYear();
+    var M = ('0' + (currentStoreTime.getMonth() + 1)).slice(-2);
+    var D = ('0' + currentStoreTime.getDate()).slice(-2);
+    var h = ('0' + currentStoreTime.getHours()).slice(-2);
+    var m = ('0' + currentStoreTime.getMinutes()).slice(-2);
+    var s = ('0' + currentStoreTime.getSeconds()).slice(-2);
+    $('#live-server-time').text(Y + '-' + M + '-' + D + ' ' + h + ':' + m + ':' + s);
+}, 1000);
+
 // ---------------------------------------------------------------
 // INITIALIZE
 // ---------------------------------------------------------------
+var picker_icons = {
+    time: 'fa fa-clock-o',
+    date: 'fa fa-calendar',
+    up: 'fa fa-chevron-up',
+    down: 'fa fa-chevron-down',
+    previous: 'fa fa-chevron-left',
+    next: 'fa fa-chevron-right',
+    today: 'fa fa-calendar-check-o',
+    clear: 'fa fa-trash',
+    close: 'fa fa-times'
+};
+
 $(document).ready(function() {
     loadBanners(0);
     loadSliders(0);
@@ -2167,7 +2323,22 @@ $(document).ready(function() {
 
     $('.date').datetimepicker({
         language: '{{ datepicker }}',
-        pickTime: false
+        pickTime: false,
+        icons: picker_icons
+    });
+
+    $('.datetime').datetimepicker({
+        language: '{{ datepicker }}',
+        pickTime: true,
+        pickDate: true,
+        icons: picker_icons
+    });
+
+    $('.time').datetimepicker({
+        language: '{{ datepicker }}',
+        pickDate: false,
+        pickTime: true,
+        icons: picker_icons
     });
 });
 

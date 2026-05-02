@@ -96,8 +96,9 @@ class ModelExtensionModuleCustomerSegment extends Model
 		  `product_ids`     TEXT DEFAULT NULL,
 		  `category_ids`    TEXT DEFAULT NULL,
 		  `code`            VARCHAR(50) DEFAULT NULL,
-		  `date_start`      DATE DEFAULT NULL,
-		  `date_end`        DATE DEFAULT NULL,
+		  `date_start`      DATETIME DEFAULT NULL,
+		  `date_end`        DATETIME DEFAULT NULL,
+		  `schedule_config` TEXT DEFAULT NULL,
 		  `uses_total`      INT(11) DEFAULT 0,
 		  `uses_customer`   INT(11) DEFAULT 1,
 		  `status`          TINYINT(1) NOT NULL DEFAULT 1,
@@ -158,11 +159,16 @@ class ModelExtensionModuleCustomerSegment extends Model
 			'scope'          => "VARCHAR(25) DEFAULT 'all'",
 			'product_ids'    => "TEXT DEFAULT NULL",
 			'category_ids'   => "TEXT DEFAULT NULL",
-			'date_start'     => "DATE DEFAULT NULL",
-			'date_end'       => "DATE DEFAULT NULL",
+			'date_start'     => "DATETIME DEFAULT NULL",
+			'date_end'       => "DATETIME DEFAULT NULL",
+			'schedule_config'=> "TEXT DEFAULT NULL",
 			'banner_data'    => "TEXT DEFAULT NULL",
 			'visual_type'    => "VARCHAR(50) NOT NULL DEFAULT 'none'"
 		);
+
+		// Convert existing dates to datetime
+		$this->db->query("ALTER TABLE `" . DB_PREFIX . "customer_segment_promotion` MODIFY `date_start` DATETIME DEFAULT NULL;");
+		$this->db->query("ALTER TABLE `" . DB_PREFIX . "customer_segment_promotion` MODIFY `date_end` DATETIME DEFAULT NULL;");
 
 		foreach ($promo_columns as $col => $def) {
 			$query = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "customer_segment_promotion` LIKE '" . $col . "'");
@@ -719,6 +725,14 @@ class ModelExtensionModuleCustomerSegment extends Model
 	// ----------------------------------------------------------------
 	public function getPromotions($customer_group_id = 0)
 	{
+		// Quick schema patch for schedule_config (if missing)
+		$query = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "customer_segment_promotion` LIKE 'schedule_config'");
+		if (!$query->num_rows) {
+			$this->db->query("ALTER TABLE `" . DB_PREFIX . "customer_segment_promotion` ADD COLUMN `schedule_config` TEXT DEFAULT NULL;");
+			$this->db->query("ALTER TABLE `" . DB_PREFIX . "customer_segment_promotion` MODIFY `date_start` DATETIME DEFAULT NULL;");
+			$this->db->query("ALTER TABLE `" . DB_PREFIX . "customer_segment_promotion` MODIFY `date_end` DATETIME DEFAULT NULL;");
+		}
+
 		$sql = "SELECT p.* FROM `" . DB_PREFIX . "customer_segment_promotion` p";
 		if ($customer_group_id) {
 			$sql .= " JOIN `" . DB_PREFIX . "customer_segment_promotion_group` pg ON (p.promotion_id = pg.promotion_id) WHERE pg.customer_group_id = '" . (int) $customer_group_id . "'";
@@ -795,8 +809,9 @@ class ModelExtensionModuleCustomerSegment extends Model
 			product_ids       = '" . $this->db->escape(isset($data['product_ids']) ? $data['product_ids'] : '') . "',
 			category_ids      = '" . $this->db->escape(isset($data['category_ids']) ? $data['category_ids'] : '') . "',
 			code              = '" . $this->db->escape(isset($data['code']) ? $data['code'] : '') . "',
-			date_start        = '" . $this->db->escape(isset($data['date_start']) ? $data['date_start'] : '') . "',
-			date_end          = '" . $this->db->escape(isset($data['date_end']) ? $data['date_end'] : '') . "',
+			date_start        = '" . $this->db->escape(!empty($data['date_start']) ? $data['date_start'] : '') . "',
+			date_end          = '" . $this->db->escape(!empty($data['date_end']) ? $data['date_end'] : '') . "',
+			schedule_config   = '" . $this->db->escape(isset($data['schedule_config']) ? $data['schedule_config'] : '') . "',
 			banner_data       = '" . $this->db->escape(isset($data['banner_data']) ? json_encode($data['banner_data']) : '') . "',
 			notification_title = '" . $this->db->escape(isset($data['notification_title']) ? $data['notification_title'] : '') . "',
 			notification_body  = '" . $this->db->escape(isset($data['notification_body']) ? $data['notification_body'] : '') . "',
@@ -825,8 +840,9 @@ class ModelExtensionModuleCustomerSegment extends Model
 			product_ids       = '" . $this->db->escape(isset($data['product_ids']) ? $data['product_ids'] : '') . "',
 			category_ids      = '" . $this->db->escape(isset($data['category_ids']) ? $data['category_ids'] : '') . "',
 			code              = '" . $this->db->escape(isset($data['code']) ? $data['code'] : '') . "',
-			date_start        = '" . $this->db->escape(isset($data['date_start']) ? $data['date_start'] : '') . "',
-			date_end          = '" . $this->db->escape(isset($data['date_end']) ? $data['date_end'] : '') . "',
+			date_start        = '" . $this->db->escape(!empty($data['date_start']) ? $data['date_start'] : '') . "',
+			date_end          = '" . $this->db->escape(!empty($data['date_end']) ? $data['date_end'] : '') . "',
+			schedule_config   = '" . $this->db->escape(isset($data['schedule_config']) ? $data['schedule_config'] : '') . "',
 			banner_data       = '" . $this->db->escape(isset($data['banner_data']) ? json_encode($data['banner_data']) : '') . "',
 			notification_title = '" . $this->db->escape(isset($data['notification_title']) ? $data['notification_title'] : '') . "',
 			notification_body  = '" . $this->db->escape(isset($data['notification_body']) ? $data['notification_body'] : '') . "',

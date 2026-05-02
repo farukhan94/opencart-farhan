@@ -94,6 +94,14 @@ class ControllerExtensionModuleCustomerSegment extends Controller
         $this->load->model('tool/image');
         $data['placeholder'] = $this->model_tool_image->resize('no_image.png', 100, 100);
 
+        $oc_timezone = $this->config->get('config_timezone');
+        if ($oc_timezone) {
+            date_default_timezone_set($oc_timezone);
+        }
+        
+        $data['server_time'] = date('Y-m-d H:i:s');
+        $data['server_timezone'] = $oc_timezone ? $oc_timezone : date_default_timezone_get();
+
         $data['header'] = $this->load->controller('common/header');
         $data['column_left'] = $this->load->controller('common/column_left');
         $data['footer'] = $this->load->controller('common/footer');

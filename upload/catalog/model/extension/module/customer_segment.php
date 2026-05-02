@@ -7,6 +7,8 @@ class ModelExtensionModuleCustomerSegment extends Model
         
         $banners = array();
         foreach ($query->rows as $row) {
+            if (!$this->isPromotionActive($row)) continue;
+
             if (!empty($row['banner_data'])) {
                 $bdata = json_decode($row['banner_data'], true);
                 if (is_array($bdata)) {
@@ -33,7 +35,10 @@ class ModelExtensionModuleCustomerSegment extends Model
         }
         $sql .= " AND p.status = '1' AND p.visual_type = 'banner'";
         $query = $this->db->query($sql);
-        return $query->row;
+        if ($query->row && $this->isPromotionActive($query->row)) {
+            return $query->row;
+        }
+        return array();
     }
 
     public function getSliders($customer_group_id)
@@ -44,8 +49,15 @@ class ModelExtensionModuleCustomerSegment extends Model
         $this->load->model('catalog/product');
         $this->load->model('tool/image');
 
+        $active_rows = array();
+        foreach ($query->rows as $row) {
+            if ($this->isPromotionActive($row)) {
+                $active_rows[] = $row;
+            }
+        }
+
         $all_slider_product_ids = array();
-        foreach ($query->rows as $result) {
+        foreach ($active_rows as $result) {
             if (!empty($result['product_ids'])) {
                 $ids = array_filter(array_map('intval', explode(',', $result['product_ids'])));
                 $all_slider_product_ids = array_merge($all_slider_product_ids, $ids);
@@ -144,7 +156,7 @@ class ModelExtensionModuleCustomerSegment extends Model
         $sql .= " AND p.status = '1' AND p.visual_type = 'product_slider'";
         $query = $this->db->query($sql);
 
-        if (!$query->row)
+        if (!$query->row || !$this->isPromotionActive($query->row))
             return array();
 
         $this->load->model('catalog/product');
@@ -235,7 +247,13 @@ class ModelExtensionModuleCustomerSegment extends Model
     {
         $query = $this->db->query("SELECT p.* FROM `" . DB_PREFIX . "customer_segment_promotion` p JOIN `" . DB_PREFIX . "customer_segment_promotion_group` pg ON (p.promotion_id = pg.promotion_id) WHERE pg.customer_group_id = '" . (int) $customer_group_id . "' AND p.status = '1' ORDER BY p.promotion_id ASC");
         
-        return $query->rows;
+        $promotions = array();
+        foreach ($query->rows as $row) {
+            if ($this->isPromotionActive($row)) {
+                $promotions[] = $row;
+            }
+        }
+        return $promotions;
     }
 
 
@@ -250,7 +268,10 @@ class ModelExtensionModuleCustomerSegment extends Model
         }
         $sql .= " AND p.status = '1'";
         $query = $this->db->query($sql);
-        return $query->row;
+        if ($query->row && $this->isPromotionActive($query->row)) {
+            return $query->row;
+        }
+        return array();
     }
 
 
@@ -554,15 +575,15 @@ class ModelExtensionModuleCustomerSegment extends Model
                 JOIN `" . DB_PREFIX . "customer_segment_promotion_group` pg ON (p.promotion_id = pg.promotion_id) 
                 WHERE pg.customer_group_id = '" . (int)$customer_group_id . "' 
                 AND p.type IN ('cart_discount', 'manual_code') 
-                AND p.status = '1'
-                AND (p.date_start = '0000-00-00' OR p.date_start IS NULL OR p.date_start <= NOW())
-                AND (p.date_end = '0000-00-00' OR p.date_end IS NULL OR p.date_end >= NOW())";
+                AND p.status = '1'";
         
         $query = $this->db->query($sql);
         
         $best_discount = array('value' => 0, 'type' => 'percent');
 
         foreach ($query->rows as $promo) {
+            if (!$this->isPromotionActive($promo)) continue;
+
             // Manual Code check
             if ($promo['type'] == 'manual_code') {
                 if (empty($this->session->data['coupon']) || $this->session->data['coupon'] != $promo['code']) {
@@ -611,15 +632,15 @@ class ModelExtensionModuleCustomerSegment extends Model
                 JOIN `" . DB_PREFIX . "customer_segment_promotion_group` pg ON (p.promotion_id = pg.promotion_id) 
                 WHERE pg.customer_group_id IN (" . implode(',', array_map('intval', $group_ids)) . ") 
                 AND p.type IN ('cart_discount', 'manual_code') 
-                AND p.status = '1'
-                AND (p.date_start = '0000-00-00' OR p.date_start IS NULL OR p.date_start <= NOW())
-                AND (p.date_end = '0000-00-00' OR p.date_end IS NULL OR p.date_end >= NOW())";
+                AND p.status = '1'";
                 
         $query = $this->db->query($sql);
 
         $best_discount = array('value' => 0, 'type' => 'percent', 'title' => '');
 
         foreach ($query->rows as $promo) {
+            if (!$this->isPromotionActive($promo)) continue;
+
             // Manual Code check
             if ($promo['type'] == 'manual_code') {
                 if (empty($this->session->data['coupon']) || $this->session->data['coupon'] != $promo['code']) {
@@ -663,6 +684,73 @@ class ModelExtensionModuleCustomerSegment extends Model
         }
 
         return $best_discount;
+    }
+
+    public function isPromotionActive($promo) {
+        $now = time();
+        $today_date = date('Y-m-d');
+        $current_time = date('H:i');
+        $day_of_week = date('w'); // 0 (Sun) to 6 (Sat)
+
+        // 1. Check Date Range (Global)
+        if (!empty($promo['date_start']) && $promo['date_start'] != '0000-00-00 00:00:00') {
+            if (strtotime($promo['date_start']) > $now) {
+                return false;
+            }
+        }
+        
+        if (!empty($promo['date_end']) && $promo['date_end'] != '0000-00-00 00:00:00') {
+            // Since date_end is now date-only, we should treat it as end of day
+            $end_ts = strtotime($promo['date_end']);
+            if (strlen($promo['date_end']) <= 10) {
+                $end_ts += 86399; // Add 23:59:59
+            }
+            if ($end_ts < $now) {
+                return false;
+            }
+        }
+
+        // 2. Check Complex Schedule
+        if (!empty($promo['schedule_config'])) {
+            $config = json_decode(html_entity_decode($promo['schedule_config'], ENT_QUOTES, 'UTF-8'), true);
+            if (is_array($config)) {
+                // Days check
+                if (isset($config['days']) && is_array($config['days'])) {
+                    if (!in_array($day_of_week, $config['days'])) {
+                        return false;
+                    }
+                }
+
+                // Time slots check
+                if (isset($config['time_slots']) && is_array($config['time_slots']) && !empty($config['time_slots'])) {
+                    $slot_match = false;
+                    foreach ($config['time_slots'] as $slot) {
+                        if ($current_time >= $slot['start'] && $current_time <= $slot['end']) {
+                            $slot_match = true;
+                            break;
+                        }
+                    }
+                    if (!$slot_match) return false;
+                } else {
+                    // Fallback to legacy single time range
+                    if (!empty($config['time_start']) && $current_time < $config['time_start']) {
+                        return false;
+                    }
+                    if (!empty($config['time_end']) && $current_time > $config['time_end']) {
+                        return false;
+                    }
+                }
+
+                // Excluded dates check
+                if (isset($config['excluded_dates']) && is_array($config['excluded_dates'])) {
+                    if (in_array($today_date, $config['excluded_dates'])) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 }
 
