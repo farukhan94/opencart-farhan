@@ -344,14 +344,49 @@ class ControllerExtensionModuleCustomerSegment extends Controller
         $results = $this->model_extension_module_customer_segment->getLogs($filter_data);
 
         $json = array();
+        $json['logs'] = array();
+        
         foreach ($results as $result) {
+            $type = $result['type'];
+            $data = json_decode($result['data'], true);
+            $description = '';
+            $icon = 'fa-info-circle';
+            $badge = 'info';
+
+            switch ($type) {
+                case 'group_change':
+                    $description = 'Segment changed from <strong>' . ($result['old_group'] ? $result['old_group'] : 'Default') . '</strong> to <strong>' . ($result['new_group'] ? $result['new_group'] : 'Default') . '</strong>';
+                    if ($result['rule_id']) {
+                        $description .= ' (Triggered by Rule ID: ' . $result['rule_id'] . ')';
+                    }
+                    $icon = 'fa-exchange';
+                    $badge = 'primary';
+                    break;
+                case 'notification':
+                    $description = 'Push Notification sent: <strong>' . (isset($data['title']) ? $data['title'] : 'Untitled') . '</strong>';
+                    $icon = 'fa-bell';
+                    $badge = 'warning';
+                    break;
+                case 'coupon_usage':
+                    $description = 'Promo Code used: <strong>' . (isset($data['code']) ? $data['code'] : 'Unknown') . '</strong> in Order #' . (isset($data['order_id']) ? $data['order_id'] : 'N/A');
+                    $icon = 'fa-ticket';
+                    $badge = 'success';
+                    break;
+                case 'manual_assignment':
+                    $description = 'Manually assigned to group: <strong>' . ($result['new_group'] ? $result['new_group'] : 'Default') . '</strong>';
+                    $icon = 'fa-user-plus';
+                    $badge = 'info';
+                    break;
+            }
+
             $json['logs'][] = array(
-                'log_id' => $result['log_id'],
-                'customer' => $result['firstname'] . ' ' . $result['lastname'] . ' (#' . $result['customer_id'] . ')',
-                'old_group' => $result['old_group'] ? $result['old_group'] : 'Default',
-                'new_group' => $result['new_group'] ? $result['new_group'] : 'Default',
-                'rule_id' => $result['rule_id'],
-                'date_added' => date($this->language->get('datetime_format'), strtotime($result['date_added']))
+                'log_id'      => $result['log_id'],
+                'type'        => $type,
+                'icon'        => $icon,
+                'badge'       => $badge,
+                'customer'    => $result['firstname'] . ' ' . $result['lastname'] . ' (#' . $result['customer_id'] . ')',
+                'description' => $description,
+                'date_added'  => date($this->language->get('datetime_format'), strtotime($result['date_added']))
             );
         }
         $json['total'] = $this->model_extension_module_customer_segment->getTotalLogs($filter_data);
@@ -712,11 +747,7 @@ class ControllerExtensionModuleCustomerSegment extends Controller
         $this->response->setOutput(json_encode($json));
     }
 
-    public function getCoupons() {
-        $query = $this->db->query("SELECT coupon_id, name, code FROM " . DB_PREFIX . "coupon WHERE status = 1 ORDER BY name ASC");
-        $this->response->addHeader("Content-Type: application/json");
-        $this->response->setOutput(json_encode($query->rows));
-    }
+
 
     public function getProducts() {
         $this->load->model("catalog/product");
@@ -789,7 +820,7 @@ class ControllerExtensionModuleCustomerSegment extends Controller
     }
 
     // ----------------------------------------------------------------
-    // SPECIAL ITEMS
+    // SECRET ITEMS
     // ----------------------------------------------------------------
     public function getSpecialItems()
     {
@@ -871,17 +902,33 @@ class ControllerExtensionModuleCustomerSegment extends Controller
     }
 
     // ----------------------------------------------------------------
-    // COMBOS
+    // EXCLUSIVE COMBOS
     // ----------------------------------------------------------------
     public function getCombos()
     {
         $this->load->model('extension/module/customer_segment');
+        $this->load->model('customer/customer_group');
         $rows = $this->model_extension_module_customer_segment->getCombos();
         foreach ($rows as &$row) {
-            $row['group_ids'] = json_decode($row['customer_group_ids'], true);
-            $ids = explode(',', $row['product_ids']);
-            $row['product_a_id'] = isset($ids[0]) ? $ids[0] : 0;
-            $row['product_b_id'] = isset($ids[1]) ? $ids[1] : 0;
+            $group_ids = json_decode($row['customer_group_ids'], true);
+            if (!is_array($group_ids)) {
+                $group_ids = array();
+            }
+
+            $group_map = array();
+            foreach ($group_ids as $group_id) {
+                $group_info = $this->model_customer_customer_group->getCustomerGroup((int)$group_id);
+                if ($group_info) {
+                    $group_map[(int)$group_id] = $group_info['name'];
+                }
+            }
+
+            $product_ids = array_filter(array_map('intval', explode(',', (string)$row['product_ids'])));
+
+            $row['group_ids'] = $group_ids;
+            $row['group_map'] = $group_map;
+            $row['product_ids'] = implode(',', $product_ids);
+            $row['product_id_list'] = $product_ids;
             $row['discount_mode'] = $row['discount_on'];
         }
         $this->response->addHeader('Content-Type: application/json');
@@ -905,8 +952,39 @@ class ControllerExtensionModuleCustomerSegment extends Controller
             } else {
                 $data['group_ids'] = array();
             }
-            
-            $data['product_ids'] = $this->request->post['product_a_id'] . ',' . $this->request->post['product_b_id'];
+
+            $product_ids = array();
+            if (isset($this->request->post['product_ids'])) {
+                $raw_ids = $this->request->post['product_ids'];
+                if (is_array($raw_ids)) {
+                    foreach ($raw_ids as $id) {
+                        $id = (int)$id;
+                        if ($id > 0) {
+                            $product_ids[] = $id;
+                        }
+                    }
+                } else {
+                    foreach (explode(',', $raw_ids) as $id) {
+                        $id = (int)$id;
+                        if ($id > 0) {
+                            $product_ids[] = $id;
+                        }
+                    }
+                }
+            }
+
+            $product_ids = array_values(array_unique($product_ids));
+            if (empty($product_ids)) {
+                $json['error'] = 'Select at least one product';
+            }
+
+            if ($json) {
+                $this->response->addHeader('Content-Type: application/json');
+                $this->response->setOutput(json_encode($json));
+                return;
+            }
+
+            $data['product_ids'] = implode(',', $product_ids);
             $data['discount_on'] = isset($this->request->post['discount_mode']) ? $this->request->post['discount_mode'] : 'bundle';
             if (!empty($this->request->post['combo_id'])) {
                 $this->model_extension_module_customer_segment->editCombo($this->request->post['combo_id'], $data);
@@ -933,11 +1011,5 @@ class ControllerExtensionModuleCustomerSegment extends Controller
         $this->response->setOutput(json_encode($json));
     }
 
-    public function getGeneratedCouponsReport() {
-        $this->load->model('extension/module/customer_segment');
-        $promotion_id = isset($this->request->get['promotion_id']) ? (int)$this->request->get['promotion_id'] : 0;
-        $rows = $this->model_extension_module_customer_segment->getGeneratedCoupons($promotion_id);
-        $this->response->addHeader('Content-Type: application/json');
-        $this->response->setOutput(json_encode($rows));
-    }
+
 }

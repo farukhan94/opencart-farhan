@@ -10,6 +10,9 @@ class ControllerExtensionModuleCustomerSegment extends Controller
         $this->load->model('extension/module/customer_segment');
         $this->load->model('tool/image');
         $this->load->model('catalog/product');
+        $this->document->addStyle('catalog/view/javascript/jquery/swiper/css/swiper.min.css');
+        $this->document->addStyle('catalog/view/javascript/jquery/swiper/css/opencart.css');
+        $this->document->addScript('catalog/view/javascript/jquery/swiper/js/swiper.jquery.js');
 
         $customer_group_id = ($this->customer->isLogged()) ? $this->customer->getGroupId() : $this->config->get('config_customer_group_id');
 
@@ -52,12 +55,19 @@ class ControllerExtensionModuleCustomerSegment extends Controller
                             $price = false;
                         }
 
+                        if ((float)$product_info['special']) {
+                            $special = $this->currency->format($this->tax->calculate($product_info['special'], $product_info['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']);
+                        } else {
+                            $special = false;
+                        }
+
                         $products[] = array(
                             'product_id'  => $product_info['product_id'],
                             'thumb'       => $image,
                             'name'        => $product_info['name'],
                             'description' => utf8_substr(strip_tags(html_entity_decode($product_info['description'], ENT_QUOTES, 'UTF-8')), 0, $this->config->get('theme_' . $this->config->get('config_theme') . '_product_description_length')) . '..',
                             'price'       => $price,
+                            'special'     => $special,
                             'href'        => $this->url->link('product/product', 'product_id=' . $product_info['product_id'])
                         );
                     }
@@ -71,6 +81,8 @@ class ControllerExtensionModuleCustomerSegment extends Controller
                 );
             }
         }
+
+        $data['combos'] = $this->model_extension_module_customer_segment->getComboOffers(array((int)$customer_group_id));
 
         return $this->load->view('extension/module/customer_segment', $data);
     }
@@ -129,6 +141,20 @@ class ControllerExtensionModuleCustomerSegment extends Controller
                     $this->load->model('extension/module/customer_segment');
                     $this->model_extension_module_customer_segment->updateCustomerGroup($order_info['customer_id'], $new_group_id, $rule_id);
                     $this->log->write("CustomerSegment: Customer " . $order_info['customer_id'] . " group changed from " . $old_group_id . " to " . $new_group_id);
+                }
+
+                // Log Coupon Usage
+                if (!empty($this->session->data['coupon'])) {
+                    $this->load->model('extension/module/customer_segment');
+                    $promo = $this->db->query("SELECT * FROM " . DB_PREFIX . "customer_segment_promotion WHERE code = '" . $this->db->escape($this->session->data['coupon']) . "' AND type = 'manual_code' AND status = '1'")->row;
+                    if ($promo) {
+                        $this->model_extension_module_customer_segment->addLog('coupon_usage', $order_info['customer_id'], array(
+                            'code'         => $this->session->data['coupon'],
+                            'order_id'     => $order_id,
+                            'promotion_id' => $promo['promotion_id'],
+                            'title'        => $promo['title']
+                        ), $promo['promotion_id']);
+                    }
                 }
             }
         }
@@ -206,34 +232,39 @@ class ControllerExtensionModuleCustomerSegment extends Controller
             'banners' => $resolved_banners,
             'sliders' => $this->model_extension_module_customer_segment->getSliders($group_id),
             'promotions' => $this->model_extension_module_customer_segment->getPromotions($group_id),
-            'combos' => $this->model_extension_module_customer_segment->getCombosForGroups(array($group_id))
+            'combos' => $this->model_extension_module_customer_segment->getComboOffers(array($group_id))
         );
 
         $this->response->setOutput(json_encode($data));
     }
 
     // ----------------------------------------------------------------
-    // SPECIAL ITEMS ENFORCEMENT HOOKS
+    // SECRET ITEMS ENFORCEMENT HOOKS
     // ----------------------------------------------------------------
     
     public function eventCheckProduct(&$route, &$args, &$output)
     {
-        if (!$this->config->get('module_customer_segment_status')) return;
+        $this->log->write("CustomerSegment Event: hit for route " . $route);
+        if (!$this->config->get('module_customer_segment_status')) {
+            $this->log->write("CustomerSegment Event: module status is OFF");
+            return;
+        }
         
         $this->load->model('extension/module/customer_segment');
         $special_items = $this->model_extension_module_customer_segment->getSpecialItems();
         
-        if (empty($special_items['product'])) return;
+        // if (empty($special_items['product'])) return;
 
         $customer_group_id = ($this->customer->isLogged()) ? (int)$this->customer->getGroupId() : (int)$this->config->get('config_customer_group_id');
 
         // getProduct hook
-        if ($route == 'catalog/model/catalog/product/getProduct/after' && !empty($output)) {
+        if (strpos($route, 'getProduct') !== false && strpos($route, 'getProducts') === false && !empty($output) && is_array($output) && isset($output['product_id'])) {
             $product_id = (int)$output['product_id'];
             
             // 1. Check Visibility (Hide if restricted)
             if (isset($special_items['product'][$product_id])) {
                 if (!in_array($customer_group_id, $special_items['product'][$product_id])) {
+                    $this->log->write("CustomerSegment: Hiding product " . $product_id . " from group " . $customer_group_id);
                     $output = false; // Hide product
                     return;
                 }
@@ -257,7 +288,7 @@ class ControllerExtensionModuleCustomerSegment extends Controller
         }
 
         // getProducts hook (usually returns array of products)
-        if ($route == 'catalog/model/catalog/product/getProducts/after' && is_array($output)) {
+        if (strpos($route, 'getProducts') !== false && is_array($output)) {
             foreach ($output as $key => &$product) {
                 $product_id = (int)$product['product_id'];
                 
@@ -296,22 +327,23 @@ class ControllerExtensionModuleCustomerSegment extends Controller
         $this->load->model('extension/module/customer_segment');
         $special_items = $this->model_extension_module_customer_segment->getSpecialItems();
         
-        if (empty($special_items['category'])) return;
+        // if (empty($special_items['category'])) return;
 
         $customer_group_id = ($this->customer->isLogged()) ? (int)$this->customer->getGroupId() : (int)$this->config->get('config_customer_group_id');
 
         // getCategory hook
-        if ($route == 'catalog/model/catalog/category/getCategory/after' && !empty($output)) {
+        if (strpos($route, 'getCategory') !== false && strpos($route, 'getCategories') === false && !empty($output) && is_array($output) && isset($output['category_id'])) {
             $category_id = (int)$output['category_id'];
             if (isset($special_items['category'][$category_id])) {
                 if (!in_array($customer_group_id, $special_items['category'][$category_id])) {
+                    $this->log->write("CustomerSegment: Hiding category " . $category_id . " from group " . $customer_group_id);
                     $output = false; // Hide category
                 }
             }
         }
 
         // getCategories hook
-        if ($route == 'catalog/model/catalog/category/getCategories/after' && is_array($output)) {
+        if (strpos($route, 'getCategories') !== false && is_array($output)) {
             foreach ($output as $key => $category) {
                 $category_id = (int)$category['category_id'];
                 if (isset($special_items['category'][$category_id])) {

@@ -43,14 +43,14 @@
         <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-module" class="form-horizontal">
           
           <ul class="nav nav-tabs">
-            <li class="active"><a href="#tab-general" data-toggle="tab">{{ tab_general }}</a></li>
-            <li><a href="#tab-rules" data-toggle="tab">{{ tab_rules }}</a></li>
+            <li class="active"><a href="#tab-general" data-toggle="tab"><i class="fa fa-cog"></i> {{ tab_general }}</a></li>
+            <li><a href="#tab-rules" data-toggle="tab"><i class="fa fa-list-ul"></i> {{ tab_rules }}</a></li>
 
-            <li><a href="#tab-manual" data-toggle="tab">{{ tab_manual }}</a></li>
-            <li><a href="#tab-logs" data-toggle="tab">{{ tab_logs }}</a></li>
+            <li><a href="#tab-manual" data-toggle="tab"><i class="fa fa-user-plus"></i> {{ tab_manual }}</a></li>
+            <li><a href="#tab-logs" data-toggle="tab"><i class="fa fa-history"></i> {{ tab_logs }}</a></li>
                                     <li><a href="#tab-promotions" data-toggle="tab"><i class="fa fa-tag"></i> Promotions</a></li>
-            <li><a href="#tab-special" data-toggle="tab"><i class="fa fa-lock"></i> Special Items</a></li>
-            <li><a href="#tab-combos" data-toggle="tab"><i class="fa fa-cubes"></i> Special Combos</a></li>
+            <li><a href="#tab-special" data-toggle="tab"><i class="fa fa-lock"></i> Secret Items</a></li>
+            <li><a href="#tab-combos" data-toggle="tab"><i class="fa fa-cubes"></i> Exclusive Combos</a></li>
           </ul>
 
           <div class="tab-content">
@@ -214,20 +214,26 @@
             <div class="tab-pane" id="tab-logs">
                <div class="well">
                  <div class="row">
-                   <div class="col-sm-4">
+                   <div class="col-sm-5">
                      <div class="form-group">
-                       <label class="control-label" for="input-log-customer-id">Customer ID</label>
-                       <input type="text" name="filter_log_customer_id" value="" id="input-log-customer-id" class="form-control" />
+                       <label class="control-label" for="input-log-customer-id">Customer ID / Name</label>
+                       <input type="text" name="filter_log_customer_id" value="" id="input-log-customer-id" class="form-control" placeholder="Search by customer..." />
                      </div>
                    </div>
-                   <div class="col-sm-4">
+                   <div class="col-sm-5">
                      <div class="form-group">
-                       <label class="control-label" for="input-log-new-group-id">Assigned Group ID</label>
-                       <input type="text" name="filter_log_new_group_id" value="" id="input-log-new-group-id" class="form-control" />
+                       <label class="control-label" for="input-log-type">Activity Type</label>
+                       <select name="filter_log_type" id="input-log-type" class="form-control">
+                         <option value="">-- All Activities --</option>
+                         <option value="group_change">Segment Changes</option>
+                         <option value="notification">Push Notifications</option>
+                         <option value="coupon_usage">Coupon Usage</option>
+                         <option value="manual_assignment">Manual Assignments</option>
+                       </select>
                      </div>
                    </div>
-                   <div class="col-sm-4">
-                     <button type="button" id="button-filter-log" class="btn btn-primary" style="margin-top:25px;"><i class="fa fa-filter"></i> Filter</button>
+                   <div class="col-sm-2">
+                     <button type="button" id="button-filter-log" class="btn btn-primary" style="margin-top:25px; width:100%;"><i class="fa fa-filter"></i> Filter</button>
                    </div>
                  </div>
                </div>
@@ -235,11 +241,9 @@
                 <table class="table table-bordered table-hover">
                   <thead>
                     <tr>
-                      <td class="text-left">Date</td>
-                      <td class="text-left">Customer</td>
-                      <td class="text-left">Old Group</td>
-                      <td class="text-left">New Group</td>
-                      <td class="text-left">Rule Triggered</td>
+                      <td class="text-left" style="width:180px;">Date</td>
+                      <td class="text-left" style="width:200px;">Customer</td>
+                      <td class="text-left">Activity Log</td>
                     </tr>
                   </thead>
                   <tbody id="dynamic-log-list">
@@ -331,7 +335,7 @@
               <div class="well" style="margin-top:10px;">
                 <div class="row">
                   <div class="col-sm-8"><p class="text-info"><i class="fa fa-info-circle"></i> Items listed here will <strong>ONLY</strong> be visible to members of the selected groups. Others will not see them in search or categories.</p></div>
-                  <div class="col-sm-4 text-right"><button type="button" onclick="openSpecialItemModal();" class="btn btn-primary"><i class="fa fa-plus"></i> Add Special Item</button></div>
+                  <div class="col-sm-4 text-right"><button type="button" onclick="openSpecialItemModal();" class="btn btn-primary"><i class="fa fa-plus"></i> Add Secret Item</button></div>
                 </div>
               </div>
               <div class="table-responsive">
@@ -347,7 +351,7 @@
               <div class="well" style="margin-top:10px;">
                 <div class="row">
                   <div class="col-sm-8"><p class="text-info"><i class="fa fa-info-circle"></i> Create special bundle deals for specific user groups.</p></div>
-                  <div class="col-sm-4 text-right"><button type="button" onclick="openComboModal(0);" class="btn btn-primary"><i class="fa fa-plus"></i> Add Combo Deal</button></div>
+                  <div class="col-sm-4 text-right"><button type="button" onclick="openComboModal(0);" class="btn btn-primary"><i class="fa fa-plus"></i> Add Exclusive Combo</button></div>
                 </div>
               </div>
               <div class="table-responsive">
@@ -460,24 +464,13 @@
           <div class="col-sm-9">
             <select name="type" id="promo-type" class="form-control" onchange="togglePromoType();">
               <option value="none">None (No Reward)</option>
-              <option value="coupon">Auto-Generated Coupon</option>
-              <option value="cart_discount">Checkout Discount</option>
+              <option value="cart_discount">Checkout Discount (Automatic)</option>
+              <option value="manual_code">Coupon / Promo Code</option>
             </select>
           </div>
         </div>
 
-        <!-- Coupon Settings -->
-        <div id="promo-coupon-settings" style="display:none;">
-           <div class="form-group">
-             <label class="col-sm-3 control-label">Coupon Basis</label>
-             <div class="col-sm-9">
-               <select name="coupon_basis_id" id="promo-coupon-basis" class="form-control">
-                  <!-- Loaded by AJAX -->
-               </select>
-               <div class="help-block">New unique coupons will be cloned from this template coupon.</div>
-             </div>
-           </div>
-        </div>
+
 
         
         <!-- Banner Settings -->
@@ -503,6 +496,16 @@
                  <option value="percent">Percentage (%)</option>
                  <option value="fixed">Fixed Amount</option>
                </select>
+             </div>
+           </div>
+        </div>
+
+        <!-- Manual Code Settings -->
+        <div id="promo-manual-code-settings" style="display:none;">
+           <div class="form-group">
+             <label class="col-sm-3 control-label">Promo Code</label>
+             <div class="col-sm-9">
+               <input type="text" name="code" id="promo-code" class="form-control" placeholder="Enter code (e.g. SUMMER20)" />
              </div>
            </div>
         </div>
@@ -535,6 +538,51 @@
           </div></div>
         </div>
 
+        <hr/>
+        <fieldset>
+          <legend style="padding-left:15px; border-bottom:0; font-size:16px;">Firebase Notifications (Optional Override)</legend>
+          <div class="col-sm-12" style="margin-bottom: 10px;">
+             <div class="alert alert-info" style="font-size: 12px; padding: 10px; margin-bottom: 10px;">
+               <i class="fa fa-info-circle"></i> <strong>Notification Override Logic:</strong> If multiple promotions are active for a group, <strong>ONLY the first one</strong> with a title will be used for the push notification override. <br><strong>Note:</strong> All other rewards (coupons, discounts, banners) will still be applied normally.
+             </div>
+             <div class="well well-sm" style="background:#f9f9f9;">
+               <p><i class="fa fa-lightbulb-o"></i> <strong>Placeholders:</strong> <code>{F_NAME}</code>, <code>{L_NAME}</code></p>
+             </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">Push Title</label>
+            <div class="col-sm-9">
+              <input type="text" name="notification_title" id="promo-notification-title" class="form-control" placeholder="Override rule notification title" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">Push Body</label>
+            <div class="col-sm-9">
+              <textarea name="notification_body" id="promo-notification-body" class="form-control" rows="2" placeholder="Override rule notification body"></textarea>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Date Start</label>
+          <div class="col-sm-9">
+            <div class="input-group date">
+              <input type="text" name="date_start" id="promo-date-start" value="" placeholder="YYYY-MM-DD" data-date-format="YYYY-MM-DD" class="form-control" />
+              <span class="input-group-btn"><button class="btn btn-default" type="button"><i class="fa fa-calendar"></i></button></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="col-sm-3 control-label">Date End</label>
+          <div class="col-sm-9">
+            <div class="input-group date">
+              <input type="text" name="date_end" id="promo-date-end" value="" placeholder="YYYY-MM-DD" data-date-format="YYYY-MM-DD" class="form-control" />
+              <span class="input-group-btn"><button class="btn btn-default" type="button"><i class="fa fa-calendar"></i></button></span>
+            </div>
+          </div>
+        </div>
+
         <div class="form-group"><label class="col-sm-3 control-label">Status</label><div class="col-sm-9"><select name="status" id="promo-status" class="form-control"><option value="1">Enabled</option><option value="0">Disabled</option></select></div></div>
       </form>
     </div>
@@ -546,7 +594,7 @@
 <!-- Restriction Modal -->
 <div class="modal fade" id="modal-special" tabindex="-1" role="dialog">
   <div class="modal-dialog" role="document"><div class="modal-content">
-    <div class="modal-header"><button type="button" class="close" data-dismiss="modal">&times;</button><h4 class="modal-title">Special Item Details</h4></div>
+    <div class="modal-header"><button type="button" class="close" data-dismiss="modal">&times;</button><h4 class="modal-title">Secret Item Details</h4></div>
     <div class="modal-body">
       <form id="form-special" class="form-horizontal">
         <div class="form-group">
@@ -583,27 +631,18 @@
 <!-- Combo Modal -->
 <div class="modal fade" id="modal-combo" tabindex="-1" role="dialog">
   <div class="modal-dialog" role="document"><div class="modal-content">
-    <div class="modal-header"><button type="button" class="close" data-dismiss="modal">&times;</button><h4 class="modal-title">Special Combo Deal</h4></div>
+    <div class="modal-header"><button type="button" class="close" data-dismiss="modal">&times;</button><h4 class="modal-title">Exclusive Combo Deal</h4></div>
     <div class="modal-body">
       <form id="form-combo" class="form-horizontal">
         <input type="hidden" id="combo-id" name="combo_id" value="" />
         <div class="form-group"><label class="col-sm-3 control-label">Combo Name</label><div class="col-sm-9"><input type="text" name="name" id="combo-name" class="form-control" placeholder="e.g. Buy A + B and get 20% off" /></div></div>
         
         <div class="form-group">
-          <label class="col-sm-3 control-label">Product A</label>
+          <label class="col-sm-3 control-label">Products</label>
           <div class="col-sm-9">
-            <input type="text" id="combo-product-a-search" placeholder="Search product..." class="form-control" />
-            <div id="combo-product-a-name" style="margin-top:5px; font-weight:bold;"></div>
-            <input type="hidden" name="product_a_id" id="combo-product-a-id" />
-          </div>
-        </div>
-        
-        <div class="form-group">
-          <label class="col-sm-3 control-label">Product B</label>
-          <div class="col-sm-9">
-            <input type="text" id="combo-product-b-search" placeholder="Search product..." class="form-control" />
-            <div id="combo-product-b-name" style="margin-top:5px; font-weight:bold;"></div>
-            <input type="hidden" name="product_b_id" id="combo-product-b-id" />
+            <input type="text" id="combo-product-search" placeholder="Search products..." class="form-control" />
+            <div id="combo-product-list" class="well well-sm" style="height: 120px; overflow: auto; margin-top:10px;"></div>
+            <input type="hidden" id="combo-product-ids" value="" />
           </div>
         </div>
 
@@ -1483,11 +1522,11 @@ function bulkRebuild(start) {
 
 function loadDynamicLogs(page) {
     var filter_customer_id = $('#input-log-customer-id').val();
-    var filter_new_group_id = $('#input-log-new-group-id').val();
+    var filter_type = $('#input-log-type').val();
     if (typeof page === 'undefined') page = 1;
 
     $.ajax({
-        url: 'index.php?route=extension/module/customer_segment/getDynamicLogs&user_token={{ user_token }}&page=' + page + '&filter_customer_id=' + filter_customer_id + '&filter_new_group_id=' + filter_new_group_id,
+        url: 'index.php?route=extension/module/customer_segment/getDynamicLogs&user_token={{ user_token }}&page=' + page + '&filter_customer_id=' + filter_customer_id + '&filter_type=' + filter_type,
         dataType: 'json',
         success: function(json) {
             var html = '';
@@ -1495,15 +1534,13 @@ function loadDynamicLogs(page) {
                 for (var i = 0; i < json['logs'].length; i++) {
                     var log = json['logs'][i];
                     html += '<tr>';
-                    html += '  <td class="text-left">' + log['date_added'] + '</td>';
-                    html += '  <td class="text-left">' + log['customer'] + '</td>';
-                    html += '  <td class="text-left">' + log['old_group'] + '</td>';
-                    html += '  <td class="text-left">' + log['new_group'] + '</td>';
-                    html += '  <td class="text-left">' + (log['rule_id'] ? 'Rule ID: ' + log['rule_id'] : 'Manual/Cron') + '</td>';
+                    html += '  <td class="text-left"><small class="text-muted"><i class="fa fa-calendar"></i> ' + log['date_added'] + '</small></td>';
+                    html += '  <td class="text-left"><strong>' + log['customer'] + '</strong></td>';
+                    html += '  <td class="text-left"><span class="label label-' + log['badge'] + '"><i class="fa ' + log['icon'] + '"></i> ' + log['type'].replace('_', ' ').toUpperCase() + '</span> &nbsp; ' + log['description'] + '</td>';
                     html += '</tr>';
                 }
             } else {
-                html = '<tr><td class="text-center" colspan="5">No results!</td></tr>';
+                html = '<tr><td class="text-center" colspan="3">No results!</td></tr>';
             }
             $('#dynamic-log-list').html(html);
 
@@ -1722,9 +1759,6 @@ function loadPromos(groupId) {
                     html += '<tr><td>' + p.promotion_id + '</td><td>' + groupNames + '</td><td>' + p.title + '</td><td>' + p.type + '</td>';
                     html += '<td><span class="label label-' + (p.status == 1 ? 'success' : 'default') + '">' + (p.status == 1 ? 'Enabled' : 'Disabled') + '</span></td>';
                     html += '<td class="text-right">';
-                    if(p.type == 'coupon') {
-                       html += '<button type="button" onclick="showCouponReport(' + p.promotion_id + ');" class="btn btn-info btn-xs" title="View Generated Coupons"><i class="fa fa-list"></i></button> ';
-                    }
                     html += '<button type="button" onclick="openPromoModal(' + p.promotion_id + ');" class="btn btn-primary btn-xs"><i class="fa fa-pencil"></i></button> ';
                     html += '<button type="button" onclick="deletePromoRow(' + p.promotion_id + ');" class="btn btn-danger btn-xs"><i class="fa fa-trash"></i></button></td></tr>';
                 }
@@ -1743,6 +1777,7 @@ function addBannerImage(image, thumb, link) {
     html += '  <td class="text-center"><a href="" id="thumb-banner' + banner_row + '" data-toggle="image" class="img-thumbnail"><img src="' + thumb + '" alt="" title="" data-placeholder="{{ placeholder }}" /></a><input type="hidden" name="banner_data[' + banner_row + '][image]" value="' + image + '" id="input-banner' + banner_row + '" /></td>';
     html += '  <td class="text-left"><input type="text" name="banner_data[' + banner_row + '][link]" value="' + link + '" class="form-control" /></td>';
     html += '  <td class="text-left"><button type="button" onclick="$(\'#banner-row' + banner_row  + '\').remove();" class="btn btn-danger"><i class="fa fa-minus-circle"></i></button></td>';
+                    html += '  <td class="text-left"><button type="button" onclick="$(\'#banner-row' + banner_row  + '\').remove();" class="btn btn-danger"><i class="fa fa-minus-circle"></i></button></td>';
     html += '</tr>';
     $('#banner-image-table tbody').append(html);
     banner_row++;
@@ -1752,101 +1787,100 @@ function openPromoModal(promo_id) {
     $('#form-promo')[0].reset();
     $('#promo-group-list, #promo-category-list, #promo-product-list').empty();
     $('#banner-image-table tbody').empty();
+    $('#promo-notification-title').val('');
+    $('#promo-notification-body').val('');
     $('#promo-id').val(promo_id || '');
     banner_row = 0;
 
-    // Load coupons first to ensure the dropdown is ready
-    $.ajax({
-        url: 'index.php?route=extension/module/customer_segment/getCoupons&user_token={{ user_token }}',
-        dataType: 'json',
-        success: function(json) {
-            var html = '<option value="0">-- Select Template Coupon --</option>';
-            for(var i=0; i<json.length; i++) {
-                html += '<option value="' + json[i].coupon_id + '">' + json[i].name + ' (' + json[i].code + ')</option>';
-            }
-            $('#promo-coupon-basis').html(html);
-            
-            if (promo_id) {
-                $.ajax({ 
-                    url: 'index.php?route=extension/module/customer_segment/getPromotion&user_token={{ user_token }}&promotion_id=' + promo_id, 
-                    dataType: 'json', 
-                    success: function(p) {
-                        if (p) {
-                            $('#promo-title').val(p.title);
-                            $('#promo-desc').val(p.description);
-                            $('#promo-type').val(p.type);
-                            $('#promo-visual-type').val(p.visual_type || 'none');
-                            $('#promo-status').val(p.status);
-                            $('#promo-scope').val(p.scope);
-                            $('#promo-discount-value').val(p.discount_value);
-                            $('#promo-discount-type').val(p.discount_type);
-                            $('#promo-coupon-basis').val(p.coupon_basis_id);
-                            
-                            if (p.group_ids) { 
-                                $.each(p.group_ids, function(id, name) { 
-                                    $('#promo-group-list').append('<div id="promo-group-list-item' + id + '"><i class="fa fa-minus-circle"></i> ' + name + '<input type="hidden" name="group_ids[]" value="' + id + '" /></div>'); 
-                                }); 
-                            }
+    if (promo_id) {
+        $.ajax({ 
+            url: 'index.php?route=extension/module/customer_segment/getPromotion&user_token={{ user_token }}&promotion_id=' + promo_id, 
+            dataType: 'json', 
+            success: function(p) {
+                if (p) {
+                    $('#promo-title').val(p.title);
+                    $('#promo-desc').val(p.description);
+                    $('#promo-type').val(p.type);
+                    $('#promo-visual-type').val(p.visual_type || 'none');
+                    $('#promo-status').val(p.status);
+                    $('#promo-scope').val(p.scope);
+                    $('#promo-discount-value').val(p.discount_value);
+                    $('#promo-discount-type').val(p.discount_type);
+                    $('#promo-code').val(p.code);
+                    $('#promo-date-start').val(p.date_start);
+                    $('#promo-date-end').val(p.date_end);
+                    $('#promo-notification-title').val(p.notification_title);
+                    $('#promo-notification-body').val(p.notification_body);
+                    
+                    if (p.group_ids) { 
+                        $.each(p.group_ids, function(id, name) { 
+                            $('#promo-group-list').append('<div id="promo-group-list-item' + id + '"><i class="fa fa-minus-circle"></i> ' + name + '<input type="hidden" name="group_ids[]" value="' + id + '" /></div>'); 
+                        }); 
+                    }
 
-                            if (p.banner_data) {
-                                try {
-                                    var bdata = JSON.parse(p.banner_data);
-                                    $.each(bdata, function(k, v) {
-                                        addBannerImage(v.image, v.thumb || v.image, v.link);
-                                    });
-                                } catch(e) {
-                                    console.log('Error parsing banner_data:', e);
-                                }
-                            }
-
-                            if (p.category_ids) {
-                                $.ajax({
-                                    url: 'index.php?route=extension/module/customer_segment/getCategoryInfo&user_token={{ user_token }}&ids=' + p.category_ids,
-                                    dataType: 'json',
-                                    success: function(cJson) {
-                                        for(var j=0; j<cJson.length; j++) {
-                                            $('#promo-category-list').append('<div id="promo-category-list-item' + cJson[j].category_id + '"><i class="fa fa-minus-circle"></i> ' + cJson[j].name + '<input type="hidden" name="category_ids[]" value="' + cJson[j].category_id + '" /></div>');
-                                        }
-                                    }
-                                });
-                            }
-                            
-                            if (p.product_ids) {
-                                $.ajax({
-                                    url: 'index.php?route=extension/module/customer_segment/getProductInfo&user_token={{ user_token }}&ids=' + p.product_ids,
-                                    dataType: 'json',
-                                    success: function(pJson) {
-                                        for(var j=0; j<pJson.length; j++) {
-                                            $('#promo-product-list').append('<div id="promo-product' + pJson[j].product_id + '"><i class="fa fa-minus-circle"></i> ' + pJson[j].name + '<input type="hidden" name="selected_product[]" value="' + pJson[j].product_id + '" /></div>');
-                                        }
-                                    }
-                                });
-                            }
-                            togglePromoType();
-                            togglePromoScope();
+                    if (p.banner_data) {
+                        try {
+                            var bdata = JSON.parse(p.banner_data);
+                            $.each(bdata, function(k, v) {
+                                addBannerImage(v.image, v.thumb || v.image, v.link);
+                            });
+                        } catch(e) {
+                            console.log('Error parsing banner_data:', e);
                         }
                     }
-                });
-            } else {
-                togglePromoType();
-                togglePromoScope();
+
+                    if (p.category_ids) {
+                        $.ajax({
+                            url: 'index.php?route=extension/module/customer_segment/getCategoryInfo&user_token={{ user_token }}&ids=' + p.category_ids,
+                            dataType: 'json',
+                            success: function(cJson) {
+                                for(var j=0; j<cJson.length; j++) {
+                                    $('#promo-category-list').append('<div id="promo-category-list-item' + cJson[j].category_id + '"><i class="fa fa-minus-circle"></i> ' + cJson[j].name + '<input type="hidden" name="category_ids[]" value="' + cJson[j].category_id + '" /></div>');
+                                }
+                            }
+                        });
+                    }
+                    
+                    if (p.product_ids) {
+                        $.ajax({
+                            url: 'index.php?route=extension/module/customer_segment/getProductInfo&user_token={{ user_token }}&ids=' + p.product_ids,
+                            dataType: 'json',
+                            success: function(pJson) {
+                                for(var j=0; j<pJson.length; j++) {
+                                    $('#promo-product-list').append('<div id="promo-product' + pJson[j].product_id + '"><i class="fa fa-minus-circle"></i> ' + pJson[j].name + '<input type="hidden" name="selected_product[]" value="' + pJson[j].product_id + '" /></div>');
+                                }
+                            }
+                        });
+                    }
+                    togglePromoType();
+                    togglePromoScope();
+                }
             }
-        }
-    });
+        });
+    } else {
+        togglePromoType();
+        togglePromoScope();
+    }
     $('#modal-promo').modal('show');
 }
 
 function togglePromoType() {
-    var action = $('#promo-type').val();
-    var visual = $('#promo-visual-type').val();
-    $('#promo-coupon-settings, #promo-discount-settings, #promo-banner-settings').hide();
-    $('#promo-scope').closest('.form-group').show();
+    var val = $('#promo-type').val();
+    $('#promo-discount-settings').hide();
+    $('#promo-manual-code-settings').hide();
+    
+    if (val == 'cart_discount') {
+        $('#promo-discount-settings').show();
+    } else if (val == 'manual_code') {
+        $('#promo-discount-settings').show();
+        $('#promo-manual-code-settings').show();
+    }
 
-    if (action == 'coupon') $('#promo-coupon-settings').show();
-    else if (action == 'cart_discount') $('#promo-discount-settings').show();
-
-    if (visual == 'banner') $('#promo-banner-settings').show();
-    else if (visual == 'product_slider') {
+    var vtype = $('#promo-visual-type').val();
+    $('#promo-banner-settings').hide();
+    if (vtype == 'banner') {
+        $('#promo-banner-settings').show();
+    } else if (vtype == 'product_slider') {
         $('#promo-scope').val('specific_products').change();
         $('#promo-scope').closest('.form-group').hide();
     }
@@ -1860,6 +1894,7 @@ function togglePromoScope() {
 }
 
 function savePromo() {
+    
     var product_ids = [];
     $('#promo-product-list input[name="selected_product[]"]').each(function() { product_ids.push($(this).val()); });
     $('#promo-product-ids').val(product_ids.join(','));
@@ -1925,7 +1960,7 @@ function loadSpecialItems() {
                     html += '<button type="button" onclick=\"openSpecialItemModal(' + r.id + ');\" class=\"btn btn-primary btn-xs\"><i class=\"fa fa-pencil\"></i></button> ';
                     html += '<button type="button" onclick=\"deleteSpecialItem(' + r.id + ');\" class=\"btn btn-danger btn-xs\"><i class=\"fa fa-trash\"></i></button></td></tr>';
                 }
-            } else { html = '<tr><td colspan=\"4\" class=\"text-center\">No special items defined.</td></tr>'; }
+            } else { html = '<tr><td colspan=\"4\" class=\"text-center\">No secret items defined.</td></tr>'; }
             $('#special-list').html(html);
         }
     });
@@ -1969,7 +2004,7 @@ function saveSpecialItem() {
 }
 
 function deleteSpecialItem(id) {
-    if (confirm('Delete this special item?')) {
+    if (confirm('Delete this secret item?')) {
         $.ajax({ url: 'index.php?route=extension/module/customer_segment/deleteSpecialItem&user_token={{ user_token }}&id=' + id, dataType: 'json', success: function() { loadSpecialItems(); } });
     }
 }
@@ -2003,7 +2038,7 @@ function loadCombos() {
             if (json.length > 0) {
                 for (var i = 0; i < json.length; i++) {
                     var c = json[i];
-                    var groupNames = c.group_ids ? Object.values(c.group_ids).join(', ') : 'None';
+                    var groupNames = c.group_map ? Object.values(c.group_map).join(', ') : 'None';
                     html += '<tr><td>' + c.combo_id + '</td><td>' + c.name + '</td><td>' + groupNames + '</td><td>' + c.discount_value + (c.discount_type=='percent'?'%':' Fixed') + '</td>';
                     html += '<td><span class=\"label label-' + (c.status == 1 ? 'success' : 'default') + '\">' + (c.status == 1 ? 'Enabled' : 'Disabled') + '</span></td>';
                     html += '<td class=\"text-right\"><button type=\"button\" onclick=\"openComboModal(' + c.combo_id + ');\" class=\"btn btn-primary btn-xs\"><i class=\"fa fa-pencil\"></i></button> ';
@@ -2018,8 +2053,8 @@ function loadCombos() {
 function openComboModal(combo_id) {
     $('#form-combo')[0].reset();
     $('#combo-group-list').empty();
-    $('#combo-product-a-name, #combo-product-b-name').text('');
-    $('#combo-product-a-id, #combo-product-b-id').val('');
+    $('#combo-product-list').empty();
+    $('#combo-product-ids').val('');
     $('#combo-id').val(combo_id || '');
 
     if (combo_id) {
@@ -2034,21 +2069,36 @@ function openComboModal(combo_id) {
                     $('#combo-discount-type').val(c.discount_type);
                     $('#combo-discount-mode').val(c.discount_mode);
                     $('#combo-status').val(c.status);
-                    $('#combo-product-a-id').val(c.product_a_id);
-                    $('#combo-product-b-id').val(c.product_b_id);
-                    if (c.group_ids) { $.each(c.group_ids, function(id, name) { $('#combo-group-list').append('<div id="combo-group-list-item' + id + '"><i class="fa fa-minus-circle"></i> ' + name + '<input type="hidden" name="group_ids[]" value="' + id + '" /></div>'); }); }
-                    
-                    // Fetch product names for labels
-                    $.ajax({
-                        url: 'index.php?route=extension/module/customer_segment/getProductInfo&user_token={{ user_token }}&ids=' + c.product_a_id + ',' + c.product_b_id,
-                        dataType: 'json',
-                        success: function(pJson) {
-                            pJson.forEach(p => {
-                                if(p.product_id == c.product_a_id) $('#combo-product-a-name').text(p.name);
-                                if(p.product_id == c.product_b_id) $('#combo-product-b-name').text(p.name);
-                            });
-                        }
-                    });
+                    var comboGroupMap = c.group_map || {};
+                    if (c.group_ids) {
+                        $.each(c.group_ids, function(_, groupId) {
+                            var gid = parseInt(groupId, 10);
+                            var groupName = comboGroupMap[gid] || ('Group #' + gid);
+                            $('#combo-group-list').append('<div id="combo-group-list-item' + gid + '"><i class="fa fa-minus-circle"></i> ' + groupName + '<input type="hidden" name="group_ids[]" value="' + gid + '" /></div>');
+                        });
+                    }
+
+                    var productIdList = [];
+                    if (Array.isArray(c.product_id_list)) {
+                        productIdList = c.product_id_list;
+                    } else if (c.product_ids) {
+                        productIdList = String(c.product_ids).split(',').map(function(id) { return parseInt(id, 10); }).filter(function(id) { return id > 0; });
+                    }
+
+                    if (productIdList.length) {
+                        $('#combo-product-ids').val(productIdList.join(','));
+                        $.ajax({
+                            url: 'index.php?route=extension/module/customer_segment/getProductInfo&user_token={{ user_token }}&ids=' + productIdList.join(','),
+                            dataType: 'json',
+                            success: function(pJson) {
+                                pJson.forEach(function(p) {
+                                    var pid = parseInt(p.product_id, 10);
+                                    $('#combo-product-list').append('<div id="combo-product-item' + pid + '"><i class="fa fa-minus-circle"></i> ' + p.name + '<input type="hidden" name="product_ids[]" value="' + pid + '" /></div>');
+                                });
+                                syncComboProductIds();
+                            }
+                        });
+                    }
                 }
             }
         });
@@ -2057,6 +2107,7 @@ function openComboModal(combo_id) {
 }
 
 function saveCombo() {
+    syncComboProductIds();
     $.ajax({
         url: 'index.php?route=extension/module/customer_segment/saveCombo&user_token={{ user_token }}',
         type: 'post', data: $('#form-combo').serialize(), dataType: 'json',
@@ -2072,7 +2123,7 @@ function deleteCombo(id) {
     }
 }
 
-$('#combo-product-a-search, #combo-product-b-search').autocomplete({
+$('#combo-product-search').autocomplete({
     'source': function(request, response) {
         $.ajax({
             url: 'index.php?route=catalog/product/autocomplete&user_token={{ user_token }}&filter_name=' + encodeURIComponent(request),
@@ -2081,17 +2132,27 @@ $('#combo-product-a-search, #combo-product-b-search').autocomplete({
         });
     },
     'select': function(item) {
-        var id = $(this).attr('id');
-        if(id.indexOf('product-a') != -1) {
-            $('#combo-product-a-search').val('');
-            $('#combo-product-a-name').text(item['label']);
-            $('#combo-product-a-id').val(item['value']);
-        } else {
-            $('#combo-product-b-search').val('');
-            $('#combo-product-b-name').text(item['label']);
-            $('#combo-product-b-id').val(item['value']);
+        $('#combo-product-search').val('');
+        var productId = parseInt(item['value'], 10);
+
+        if (!$('#combo-product-item' + productId).length) {
+            $('#combo-product-list').append('<div id="combo-product-item' + productId + '"><i class="fa fa-minus-circle"></i> ' + item['label'] + '<input type="hidden" name="product_ids[]" value="' + productId + '" /></div>');
         }
+        syncComboProductIds();
     }
+});
+
+function syncComboProductIds() {
+    var selectedIds = [];
+    $('#combo-product-list input[name=\'product_ids[]\']').each(function() {
+        selectedIds.push($(this).val());
+    });
+    $('#combo-product-ids').val(selectedIds.join(','));
+}
+
+$('#combo-product-list').delegate('.fa-minus-circle', 'click', function() {
+    $(this).parent().remove();
+    syncComboProductIds();
 });
 
 // ---------------------------------------------------------------
@@ -2103,6 +2164,11 @@ $(document).ready(function() {
     loadPromos(0);
     loadSpecialItems();
     loadCombos();
+
+    $('.date').datetimepicker({
+        language: '{{ datepicker }}',
+        pickTime: false
+    });
 });
 
 $('#btn-filter-banners').on('click', function() { loadBanners($('#filter-banner-group').val()); });

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+    <name>Customer Segment Manual Promo Codes</name>
+    <code>customer_segment_manual_code</code>
+    <version>1.0</version>
+    <author>Antigravity</author>
+    <link></link>
+    <file path="catalog/model/extension/total/coupon.php">
+        <operation>
+            <search><![CDATA[if ($coupon_query->num_rows) {]]></search>
+            <add position="before"><![CDATA[
+		// CUSTOMER SEGMENT MANUAL CODE INTERCEPTION
+		if (empty($coupon_query->num_rows)) {
+			$segment_promo_query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "customer_segment_promotion` WHERE code = '" . $this->db->escape($code) . "' AND status = '1'");
+			
+			if ($segment_promo_query->num_rows) {
+				return array(
+					'coupon_id'     => 0,
+					'code'          => $segment_promo_query->row['code'],
+					'name'          => $segment_promo_query->row['title'],
+					'type'          => 'F',
+					'discount'      => 0,
+					'shipping'      => 0,
+					'total'         => 0,
+					'product'       => array(),
+					'date_start'    => $segment_promo_query->row['date_start'],
+					'date_end'      => $segment_promo_query->row['date_end'],
+					'uses_total'    => 0,
+					'uses_customer' => 0,
+					'status'        => 1,
+					'date_added'    => date('Y-m-d')
+				);
+			}
+		}
+            ]]></add>
+        </operation>
+    </file>
+</modification>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+    <name>Customer Segment Manual Promo Codes</name>
+    <code>customer_segment_manual_code</code>
+    <version>1.0</version>
+    <author>Antigravity</author>
+    <link></link>
+    <file path="catalog/model/extension/total/coupon.php">
+        <operation>
+            <search><![CDATA[if ($coupon_query->num_rows) {]]></search>
+            <add position="before"><![CDATA[
+		// CUSTOMER SEGMENT MANUAL CODE INTERCEPTION
+		if (empty($coupon_query->num_rows)) {
+			$current_group_id = $this->customer->isLogged() ? $this->customer->getGroupId() : $this->config->get('config_customer_group_id');
+			
+			$segment_promo_query = $this->db->query("SELECT p.* FROM `" . DB_PREFIX . "customer_segment_promotion` p JOIN `" . DB_PREFIX . "customer_segment_promotion_group` pg ON (p.promotion_id = pg.promotion_id) WHERE p.code = '" . $this->db->escape($code) . "' AND p.type = 'manual_code' AND p.status = '1' AND (p.date_start = '0000-00-00' OR p.date_start IS NULL OR p.date_start <= NOW()) AND (p.date_end = '0000-00-00' OR p.date_end IS NULL OR p.date_end >= NOW()) AND pg.customer_group_id = '" . (int)$current_group_id . "'");
+			
+			if ($segment_promo_query->num_rows) {
+				return array(
+					'coupon_id'     => 0,
+					'code'          => $segment_promo_query->row['code'],
+					'name'          => $segment_promo_query->row['title'],
+					'type'          => 'F',
+					'discount'      => 0,
+					'shipping'      => 0,
+					'total'         => 0,
+					'product'       => array(),
+					'date_start'    => $segment_promo_query->row['date_start'],
+					'date_end'      => $segment_promo_query->row['date_end'],
+					'uses_total'    => 0,
+					'uses_customer' => 0,
+					'status'        => 1,
+					'date_added'    => date('Y-m-d')
+				);
+			}
+		}
+            ]]></add>
+        </operation>
+    </file>
+</modification>

@@ -36,7 +36,7 @@
                 <option value="0" {% if target_id == '0' %}selected="selected"{% endif %}>{{ text_all }}</option>
                 <optgroup label="{{ text_specific }}">
                   {% for item in items %}
-                  <option value="{{ item.banner_id|default(item.slider_id|default(item.promotion_id)) }}" {% if target_id == item.banner_id|default(item.slider_id|default(item.promotion_id)) %}selected="selected"{% endif %}>{{ item.title|default(item.name) }}</option>
+                  <option value="{{ item.banner_id|default(item.slider_id|default(item.promotion_id|default(item.combo_id))) }}" {% if target_id == item.banner_id|default(item.slider_id|default(item.promotion_id|default(item.combo_id))) %}selected="selected"{% endif %}>{{ item.title|default(item.name) }}</option>
                   {% endfor %}
                 </optgroup>
               </select>

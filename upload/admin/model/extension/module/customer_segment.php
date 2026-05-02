@@ -31,12 +31,17 @@ class ModelExtensionModuleCustomerSegment extends Model
 		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "customer_segment_log` (
 		  `log_id`       INT(11) NOT NULL AUTO_INCREMENT,
 		  `customer_id`  INT(11) NOT NULL,
-		  `old_group_id` INT(11) NOT NULL,
-		  `new_group_id` INT(11) NOT NULL,
+		  `type`         VARCHAR(50) NOT NULL DEFAULT 'group_change',
+		  `target_id`    INT(11) DEFAULT NULL,
+		  `old_group_id` INT(11) DEFAULT NULL,
+		  `new_group_id` INT(11) DEFAULT NULL,
 		  `rule_id`      INT(11) DEFAULT NULL,
+		  `data`         TEXT,
 		  `comment`      TEXT,
 		  `date_added`   DATETIME NOT NULL,
-		  PRIMARY KEY (`log_id`)
+		  PRIMARY KEY (`log_id`),
+		  KEY `customer_id` (`customer_id`),
+		  KEY `type` (`type`)
 		) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;");
 
 		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "customer_segment_manual` (
@@ -90,13 +95,11 @@ class ModelExtensionModuleCustomerSegment extends Model
 		  `scope`           VARCHAR(25) DEFAULT 'all',
 		  `product_ids`     TEXT DEFAULT NULL,
 		  `category_ids`    TEXT DEFAULT NULL,
-		  `coupon_prefix`   VARCHAR(20) DEFAULT NULL,
 		  `code`            VARCHAR(50) DEFAULT NULL,
 		  `date_start`      DATE DEFAULT NULL,
 		  `date_end`        DATE DEFAULT NULL,
 		  `uses_total`      INT(11) DEFAULT 0,
 		  `uses_customer`   INT(11) DEFAULT 1,
-		  `coupon_basis_id`  INT(11) DEFAULT 0,
 		  `status`          TINYINT(1) NOT NULL DEFAULT 1,
 		  PRIMARY KEY (`promotion_id`)
 		) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;");
@@ -107,18 +110,7 @@ class ModelExtensionModuleCustomerSegment extends Model
 		  PRIMARY KEY (`promotion_id`, `customer_group_id`)
 		) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;");
 
-		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "customer_segment_coupon_generated` (
-		  `id`             INT(11) NOT NULL AUTO_INCREMENT,
-		  `promotion_id`   INT(11) NOT NULL,
-		  `customer_id`    INT(11) NOT NULL,
-		  `coupon_id`      INT(11) DEFAULT NULL,
-		  `coupon_code`    VARCHAR(50) NOT NULL,
-		  `date_generated` DATETIME NOT NULL,
-		  PRIMARY KEY (`id`),
-		  UNIQUE KEY `promo_customer` (`promotion_id`, `customer_id`)
-		) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;");
-
-		// SPECIAL ITEMS
+		// SECRET ITEMS
 		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "customer_segment_special` (
 		  `id`                 INT(11) NOT NULL AUTO_INCREMENT,
 		  `item_type`          VARCHAR(10) NOT NULL,
@@ -128,7 +120,7 @@ class ModelExtensionModuleCustomerSegment extends Model
 		  UNIQUE KEY `item` (`item_type`, `item_id`)
 		) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;");
 
-		// COMBOS
+		// EXCLUSIVE COMBOS
 		$this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "customer_segment_combo` (
 		  `combo_id`           INT(11) NOT NULL AUTO_INCREMENT,
 		  `name`               VARCHAR(255) NOT NULL,
@@ -166,11 +158,8 @@ class ModelExtensionModuleCustomerSegment extends Model
 			'scope'          => "VARCHAR(25) DEFAULT 'all'",
 			'product_ids'    => "TEXT DEFAULT NULL",
 			'category_ids'   => "TEXT DEFAULT NULL",
-			'coupon_prefix'  => "VARCHAR(20) DEFAULT NULL",
 			'date_start'     => "DATE DEFAULT NULL",
 			'date_end'       => "DATE DEFAULT NULL",
-			'uses_total'     => "INT(11) DEFAULT 0",
-			'uses_customer'  => "INT(11) DEFAULT 1",
 			'banner_data'    => "TEXT DEFAULT NULL",
 			'visual_type'    => "VARCHAR(50) NOT NULL DEFAULT 'none'"
 		);
@@ -182,9 +171,43 @@ class ModelExtensionModuleCustomerSegment extends Model
 			}
 		}
 
-		$query = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "customer_segment_promotion` LIKE 'coupon_basis_id'");
-		if (!$query->num_rows) {
-			$this->db->query("ALTER TABLE `" . DB_PREFIX . "customer_segment_promotion` ADD COLUMN `coupon_basis_id` INT(11) DEFAULT 0 AFTER `code`;");
+		$promo_notif_columns = array(
+			'notification_title' => "VARCHAR(255) DEFAULT NULL",
+			'notification_body'  => "TEXT DEFAULT NULL"
+		);
+
+		foreach ($promo_notif_columns as $col => $def) {
+			$query = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "customer_segment_promotion` LIKE '" . $col . "'");
+			if (!$query->num_rows) {
+				$this->db->query("ALTER TABLE `" . DB_PREFIX . "customer_segment_promotion` ADD COLUMN `" . $col . "` " . $def . ";");
+			}
+		}
+
+		// Legacy Cleanup: Remove coupon-generation columns and tables
+		$legacy_columns = array('coupon_prefix', 'coupon_basis_id', 'uses_total', 'uses_customer');
+		foreach ($legacy_columns as $col) {
+			$query = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "customer_segment_promotion` LIKE '" . $col . "'");
+			if ($query->num_rows) {
+				$this->db->query("ALTER TABLE `" . DB_PREFIX . "customer_segment_promotion` DROP COLUMN `" . $col . "`");
+			}
+		}
+		
+		$this->db->query("DROP TABLE IF EXISTS `" . DB_PREFIX . "customer_segment_coupon_generated` ");
+
+
+
+		// Ensure columns exist for logs (migration)
+		$log_columns = array(
+			'type'      => "VARCHAR(50) NOT NULL DEFAULT 'group_change'",
+			'target_id' => "INT(11) DEFAULT NULL",
+			'data'      => "TEXT"
+		);
+
+		foreach ($log_columns as $col => $def) {
+			$query = $this->db->query("SHOW COLUMNS FROM `" . DB_PREFIX . "customer_segment_log` LIKE '" . $col . "'");
+			if (!$query->num_rows) {
+				$this->db->query("ALTER TABLE `" . DB_PREFIX . "customer_segment_log` ADD COLUMN `" . $col . "` " . $def . ";");
+			}
 		}
 
 		// Ensure columns exist for customer table
@@ -329,43 +352,116 @@ class ModelExtensionModuleCustomerSegment extends Model
 		if ($old_group_id != $customer_group_id) {
 			$this->db->query("UPDATE " . DB_PREFIX . "customer SET customer_group_id = '" . (int) $customer_group_id . "' WHERE customer_id = '" . (int) $customer_id . "'");
 
-			$this->db->query("INSERT INTO " . DB_PREFIX . "customer_segment_log SET 
-                customer_id = '" . (int) $customer_id . "', 
-                old_group_id = '" . (int) $old_group_id . "', 
-                new_group_id = '" . (int) $customer_group_id . "', 
-                rule_id = '" . (int) $rule_id . "', 
-                date_added = NOW()");
+			$this->addLog('group_change', $customer_id, array(
+				'old_group_id' => $old_group_id,
+				'new_group_id' => $customer_group_id
+			), $rule_id);
 
 			// Check Rule Actions
 			if ($rule_id > 0) {
-				$rule_query = $this->db->query("SELECT actions_json FROM `" . DB_PREFIX . "customer_segment_rule` WHERE rule_id = '" . (int) $rule_id . "'");
-				if ($rule_query->num_rows && !empty($rule_query->row['actions_json'])) {
-					$actions = json_decode(html_entity_decode($rule_query->row['actions_json'], ENT_QUOTES, 'UTF-8'), true);
-
-					if (isset($actions['notification']) && !empty($actions['notification']['title'])) {
-						$tokens_query = $this->db->query("SELECT token FROM `" . DB_PREFIX . "customer_segment_fcm_token` WHERE customer_id = '" . (int) $customer_id . "'");
-						if ($tokens_query->num_rows) {
-							$firebase_json = $this->config->get('module_customer_segment_firebase_json');
-							if ($firebase_json) {
-								require_once(DIR_SYSTEM . 'library/customer_segment/firebase.php');
-								$firebase = new \CustomerSegment\Firebase($firebase_json, $this->registry);
-								foreach ($tokens_query->rows as $token_row) {
-									$firebase->sendToDevice($token_row['token'], $actions['notification']['title'], $actions['notification']['body']);
-								}
-							}
-						}
-					}
-				}
+				$this->sendReassignmentNotification($customer_id, $customer_group_id, $rule_id);
 			}
 
 			return true;
 		}
 	}
 
+	public function sendReassignmentNotification($customer_id, $customer_group_id, $rule_id = 0)
+	{
+		$notification_title = '';
+		$notification_body = '';
+		$promotion_id = 0;
+
+		// 1. Check for Promotion Overrides
+		$promo_query = $this->db->query("SELECT p.* FROM `" . DB_PREFIX . "customer_segment_promotion` p 
+			JOIN `" . DB_PREFIX . "customer_segment_promotion_group` pg ON (p.promotion_id = pg.promotion_id) 
+			WHERE pg.customer_group_id = '" . (int)$customer_group_id . "' 
+			AND p.status = '1' 
+			AND p.notification_title IS NOT NULL 
+			AND p.notification_title != '' 
+			ORDER BY p.promotion_id ASC LIMIT 1");
+
+		if ($promo_query->num_rows) {
+			$promo_info = $promo_query->row;
+			$notification_title = $promo_info['notification_title'];
+			$notification_body = $promo_info['notification_body'];
+			$promotion_id = $promo_info['promotion_id'];
+		}
+
+		// 2. Fallback to Rule Actions if no promotion notification
+		if (!$notification_title && $rule_id > 0) {
+			$rule_query = $this->db->query("SELECT actions_json FROM `" . DB_PREFIX . "customer_segment_rule` WHERE rule_id = '" . (int)$rule_id . "'");
+			if ($rule_query->num_rows && !empty($rule_query->row['actions_json'])) {
+				$actions = json_decode(html_entity_decode($rule_query->row['actions_json'], ENT_QUOTES, 'UTF-8'), true);
+				if (isset($actions['notification']) && !empty($actions['notification']['title'])) {
+					$notification_title = $actions['notification']['title'];
+					$notification_body = $actions['notification']['body'];
+				}
+			}
+		}
+
+		if ($notification_title) {
+			// Resolve Placeholders
+			$customer_query = $this->db->query("SELECT firstname, lastname FROM `" . DB_PREFIX . "customer` WHERE customer_id = '" . (int)$customer_id . "'");
+			$fname = $customer_query->row ? $customer_query->row['firstname'] : '';
+			$lname = $customer_query->row ? $customer_query->row['lastname'] : '';
+			
+			$find = array('{F_NAME}', '{L_NAME}');
+			$replace = array($fname, $lname);
+
+			$notification_title = str_replace($find, $replace, $notification_title);
+			$notification_body = str_replace($find, $replace, $notification_body);
+
+			// Send via Firebase
+			$tokens_query = $this->db->query("SELECT token FROM `" . DB_PREFIX . "customer_segment_fcm_token` WHERE customer_id = '" . (int)$customer_id . "'");
+			if ($tokens_query->num_rows) {
+				$firebase_json = $this->config->get('module_customer_segment_firebase_json');
+				if ($firebase_json) {
+					require_once(DIR_SYSTEM . 'library/customer_segment/firebase.php');
+					$firebase = new \CustomerSegment\Firebase($firebase_json, $this->registry);
+					foreach ($tokens_query->rows as $token_row) {
+						$firebase->sendToDevice($token_row['token'], $notification_title, $notification_body);
+						
+						$this->addLog('notification', $customer_id, array(
+							'title' => $notification_title,
+							'body'  => $notification_body,
+							'promotion_id' => $promotion_id
+						), $promotion_id);
+					}
+				}
+			}
+		}
+	}
+
+	public function addLog($type, $customer_id, $data = array(), $target_id = 0)
+	{
+		$sql = "INSERT INTO " . DB_PREFIX . "customer_segment_log SET 
+			customer_id = '" . (int) $customer_id . "', 
+			type = '" . $this->db->escape($type) . "', 
+			target_id = '" . (int) $target_id . "', 
+			data = '" . $this->db->escape(json_encode($data)) . "', ";
+
+		if ($type == 'group_change') {
+			$sql .= "old_group_id = '" . (int) (isset($data['old_group_id']) ? $data['old_group_id'] : 0) . "', 
+				new_group_id = '" . (int) (isset($data['new_group_id']) ? $data['new_group_id'] : 0) . "', 
+				rule_id = '" . (int) $target_id . "', ";
+		}
+
+		$sql .= "date_added = NOW()";
+
+		$this->db->query($sql);
+	}
+
+
+
 	public function addManual($customer_id, $customer_group_id)
 	{
 		$this->db->query("DELETE FROM " . DB_PREFIX . "customer_segment_manual WHERE customer_id = '" . (int) $customer_id . "'");
 		$this->db->query("INSERT INTO " . DB_PREFIX . "customer_segment_manual SET customer_id = '" . (int) $customer_id . "', group_id = '" . (int) $customer_group_id . "', date_added = NOW()");
+
+		$this->addLog('manual_assignment', $customer_id, array(
+			'group_id' => $customer_group_id
+		));
 	}
 
 	public function deleteManual($customer_id)
@@ -390,10 +486,19 @@ class ModelExtensionModuleCustomerSegment extends Model
 		$implode = array();
 
 		if (!empty($data['filter_customer_id'])) {
-			$implode[] = "l.customer_id = '" . (int) $data['filter_customer_id'] . "'";
+			if (is_numeric($data['filter_customer_id'])) {
+				$implode[] = "l.customer_id = '" . (int) $data['filter_customer_id'] . "'";
+			} else {
+				$implode[] = "(c.firstname LIKE '%" . $this->db->escape($data['filter_customer_id']) . "%' OR c.lastname LIKE '%" . $this->db->escape($data['filter_customer_id']) . "%')";
+			}
 		}
+
 		if (!empty($data['filter_new_group_id'])) {
 			$implode[] = "l.new_group_id = '" . (int) $data['filter_new_group_id'] . "'";
+		}
+
+		if (!empty($data['filter_type'])) {
+			$implode[] = "l.type = '" . $this->db->escape($data['filter_type']) . "'";
 		}
 
 		if ($implode) {
@@ -423,10 +528,20 @@ class ModelExtensionModuleCustomerSegment extends Model
 		$implode = array();
 
 		if (!empty($data['filter_customer_id'])) {
-			$implode[] = "l.customer_id = '" . (int) $data['filter_customer_id'] . "'";
+			if (is_numeric($data['filter_customer_id'])) {
+				$implode[] = "l.customer_id = '" . (int) $data['filter_customer_id'] . "'";
+			} else {
+				$sql .= " LEFT JOIN " . DB_PREFIX . "customer c ON (l.customer_id = c.customer_id)";
+				$implode[] = "(c.firstname LIKE '%" . $this->db->escape($data['filter_customer_id']) . "%' OR c.lastname LIKE '%" . $this->db->escape($data['filter_customer_id']) . "%')";
+			}
 		}
+
 		if (!empty($data['filter_new_group_id'])) {
 			$implode[] = "l.new_group_id = '" . (int) $data['filter_new_group_id'] . "'";
+		}
+
+		if (!empty($data['filter_type'])) {
+			$implode[] = "l.type = '" . $this->db->escape($data['filter_type']) . "'";
 		}
 
 		if ($implode) {
@@ -679,14 +794,12 @@ class ModelExtensionModuleCustomerSegment extends Model
 			scope             = '" . $this->db->escape($data['scope']) . "',
 			product_ids       = '" . $this->db->escape(isset($data['product_ids']) ? $data['product_ids'] : '') . "',
 			category_ids      = '" . $this->db->escape(isset($data['category_ids']) ? $data['category_ids'] : '') . "',
-			coupon_prefix     = '" . $this->db->escape(isset($data['coupon_prefix']) ? $data['coupon_prefix'] : '') . "',
 			code              = '" . $this->db->escape(isset($data['code']) ? $data['code'] : '') . "',
-			coupon_basis_id   = '" . (int)(isset($data['coupon_basis_id']) ? $data['coupon_basis_id'] : 0) . "',
 			date_start        = '" . $this->db->escape(isset($data['date_start']) ? $data['date_start'] : '') . "',
 			date_end          = '" . $this->db->escape(isset($data['date_end']) ? $data['date_end'] : '') . "',
-			uses_total        = '" . (isset($data['uses_total']) ? (int)$data['uses_total'] : 0) . "',
-			uses_customer     = '" . (isset($data['uses_customer']) ? (int)$data['uses_customer'] : 1) . "',
 			banner_data       = '" . $this->db->escape(isset($data['banner_data']) ? json_encode($data['banner_data']) : '') . "',
+			notification_title = '" . $this->db->escape(isset($data['notification_title']) ? $data['notification_title'] : '') . "',
+			notification_body  = '" . $this->db->escape(isset($data['notification_body']) ? $data['notification_body'] : '') . "',
 			status            = '" . (int) (isset($data['status']) ? $data['status'] : 1) . "'");
 		$promotion_id = $this->db->getLastId();
 
@@ -711,14 +824,12 @@ class ModelExtensionModuleCustomerSegment extends Model
 			scope             = '" . $this->db->escape($data['scope']) . "',
 			product_ids       = '" . $this->db->escape(isset($data['product_ids']) ? $data['product_ids'] : '') . "',
 			category_ids      = '" . $this->db->escape(isset($data['category_ids']) ? $data['category_ids'] : '') . "',
-			coupon_prefix     = '" . $this->db->escape(isset($data['coupon_prefix']) ? $data['coupon_prefix'] : '') . "',
 			code              = '" . $this->db->escape(isset($data['code']) ? $data['code'] : '') . "',
-			coupon_basis_id   = '" . (int)(isset($data['coupon_basis_id']) ? $data['coupon_basis_id'] : 0) . "',
 			date_start        = '" . $this->db->escape(isset($data['date_start']) ? $data['date_start'] : '') . "',
 			date_end          = '" . $this->db->escape(isset($data['date_end']) ? $data['date_end'] : '') . "',
-			uses_total        = '" . (isset($data['uses_total']) ? (int)$data['uses_total'] : 0) . "',
-			uses_customer     = '" . (isset($data['uses_customer']) ? (int)$data['uses_customer'] : 1) . "',
 			banner_data       = '" . $this->db->escape(isset($data['banner_data']) ? json_encode($data['banner_data']) : '') . "',
+			notification_title = '" . $this->db->escape(isset($data['notification_title']) ? $data['notification_title'] : '') . "',
+			notification_body  = '" . $this->db->escape(isset($data['notification_body']) ? $data['notification_body'] : '') . "',
 			status            = '" . (int) (isset($data['status']) ? $data['status'] : 1) . "'
 			WHERE promotion_id = '" . (int) $promotion_id . "'");
 
@@ -733,22 +844,11 @@ class ModelExtensionModuleCustomerSegment extends Model
 
 	public function deletePromotion($promotion_id)
 	{
-		// Clean up generated coupons
-		$query = $this->db->query("SELECT coupon_id FROM `" . DB_PREFIX . "customer_segment_coupon_generated` WHERE promotion_id = '" . (int)$promotion_id . "'");
-		foreach ($query->rows as $row) {
-			if ($row['coupon_id']) {
-				$this->db->query("DELETE FROM `" . DB_PREFIX . "coupon` WHERE coupon_id = '" . (int)$row['coupon_id'] . "'");
-				$this->db->query("DELETE FROM `" . DB_PREFIX . "coupon_category` WHERE coupon_id = '" . (int)$row['coupon_id'] . "'");
-				$this->db->query("DELETE FROM `" . DB_PREFIX . "coupon_product` WHERE coupon_id = '" . (int)$row['coupon_id'] . "'");
-			}
-		}
-		$this->db->query("DELETE FROM `" . DB_PREFIX . "customer_segment_coupon_generated` WHERE promotion_id = '" . (int)$promotion_id . "'");
-
 		$this->db->query("DELETE FROM `" . DB_PREFIX . "customer_segment_promotion_group` WHERE promotion_id = '" . (int)$promotion_id . "'");
 		$this->db->query("DELETE FROM `" . DB_PREFIX . "customer_segment_promotion` WHERE promotion_id = '" . (int) $promotion_id . "'");
 	}
 
-	// SPECIAL ITEMS
+	// SECRET ITEMS
 	public function getSpecialItems()
 	{
 		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "customer_segment_special` ORDER BY id ASC");
@@ -769,7 +869,7 @@ class ModelExtensionModuleCustomerSegment extends Model
 		$this->db->query("DELETE FROM `" . DB_PREFIX . "customer_segment_special` WHERE id = '" . (int)$id . "'");
 	}
 
-	// COMBOS
+	// EXCLUSIVE COMBOS
 	public function getCombos()
 	{
 		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "customer_segment_combo` ORDER BY combo_id ASC");
@@ -816,16 +916,5 @@ class ModelExtensionModuleCustomerSegment extends Model
 		$this->db->query("DELETE FROM `" . DB_PREFIX . "customer_segment_combo` WHERE combo_id = '" . (int)$combo_id . "'");
 	}
 
-	// COUPON GENERATION
-	public function getGeneratedCouponForCustomer($promotion_id, $customer_id)
-	{
-		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "customer_segment_coupon_generated` WHERE promotion_id = '" . (int)$promotion_id . "' AND customer_id = '" . (int)$customer_id . "'");
-		return $query->row;
-	}
 
-	public function getGeneratedCoupons($promotion_id)
-	{
-		$query = $this->db->query("SELECT cg.*, c.firstname, c.lastname, c.email FROM `" . DB_PREFIX . "customer_segment_coupon_generated` cg LEFT JOIN `" . DB_PREFIX . "customer` c ON (cg.customer_id = c.customer_id) WHERE cg.promotion_id = '" . (int)$promotion_id . "' ORDER BY cg.date_generated DESC");
-		return $query->rows;
-	}
 }
