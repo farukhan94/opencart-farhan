@@ -21,25 +21,36 @@
 
 <div class="customer-segment-personalized">
   {% if banners %}
-    <div class="segment-banners owl-carousel" id="segment-banner-carousel">
-      {% for banner in banners %}
-        <div class="banner-item text-center">
-          {% if banner.link %}
-            <a href="{{ banner.link }}"><img src="{{ banner.image }}" alt="{{ banner.title }}" class="img-responsive" /></a>
-          {% else %}
-            <img src="{{ banner.image }}" alt="{{ banner.title }}" class="img-responsive" />
-          {% endif %}
+    <div class="segment-banners swiper-viewport">
+      <div id="segment-banner-carousel" class="swiper-container">
+        <div class="swiper-wrapper">
+          {% for banner in banners %}
+          <div class="swiper-slide text-center">
+            {% if banner.link %}
+              <a href="{{ banner.link }}"><img src="{{ banner.image }}" alt="{{ banner.title }}" class="img-responsive" /></a>
+            {% else %}
+              <img src="{{ banner.image }}" alt="{{ banner.title }}" class="img-responsive" />
+            {% endif %}
+          </div>
+          {% endfor %}
         </div>
-      {% endfor %}
+      </div>
+      <div class="swiper-pagination segment-banner-carousel"></div>
+      <div class="swiper-pager">
+        <div class="swiper-button-next"></div>
+        <div class="swiper-button-prev"></div>
+      </div>
     </div>
     <script type="text/javascript"><!--
-    $('#segment-banner-carousel').owlCarousel({
-        items: 1,
-        autoPlay: 5000,
-        singleItem: true,
-        navigation: true,
-        navigationText: ['<i class="fa fa-chevron-left fa-5x"></i>', '<i class="fa fa-chevron-right fa-5x"></i>'],
-        pagination: true
+    $('#segment-banner-carousel').swiper({
+        mode: 'horizontal',
+        slidesPerView: 1,
+        pagination: '.segment-banner-carousel',
+        paginationClickable: true,
+        nextButton: '.swiper-button-next',
+        prevButton: '.swiper-button-prev',
+        autoplay: 5000,
+        loop: true
     });
     --></script>
   {% endif %}

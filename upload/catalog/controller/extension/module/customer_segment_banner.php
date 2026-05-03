@@ -10,6 +10,10 @@ class ControllerExtensionModuleCustomerSegmentBanner extends Controller
         $this->load->model('extension/module/customer_segment');
         $this->load->model('tool/image');
 
+        $this->document->addStyle('catalog/view/javascript/jquery/swiper/css/swiper.min.css');
+        $this->document->addStyle('catalog/view/javascript/jquery/swiper/css/opencart.css');
+        $this->document->addScript('catalog/view/javascript/jquery/swiper/js/swiper.jquery.js');
+
         $customer_group_id = (int) $this->customer->getGroupId();
         if (!$customer_group_id) {
             $customer_group_id = (int) $this->config->get('config_customer_group_id');
@@ -17,9 +21,18 @@ class ControllerExtensionModuleCustomerSegmentBanner extends Controller
 
         $banners = array();
         if (!empty($setting['target_id'])) {
-            $banner = $this->model_extension_module_customer_segment->getBanner($setting['target_id'], $customer_group_id);
-            if ($banner) {
-                $banners[] = $banner;
+            $promotion = $this->model_extension_module_customer_segment->getBanner($setting['target_id'], $customer_group_id);
+            if ($promotion && !empty($promotion['banner_data'])) {
+                $bdata = json_decode($promotion['banner_data'], true);
+                if (is_array($bdata)) {
+                    foreach ($bdata as $b) {
+                        $banners[] = array(
+                            'title' => $promotion['title'],
+                            'link'  => isset($b['link']) ? $b['link'] : '',
+                            'image' => isset($b['image']) ? $b['image'] : ''
+                        );
+                    }
+                }
             }
         } else {
             $banners = $this->model_extension_module_customer_segment->getBanners($customer_group_id);
