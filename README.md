@@ -462,7 +462,39 @@ These endpoints are used by the storefront or mobile app. They require a valid c
 Returns segment-specific content for the logged-in customer, including banners, sliders, promotions, and combo offers.
 - **URL**: `index.php?route=extension/module/customer_segment/getPersonalized`
 - **Method**: `GET`
-- **Response**: JSON object containing `customer_group_id`, `banners`, `sliders`, `promotions`, and `combos`.
+- **Response Example**:
+```json
+{
+  "customer_group_id": 2,
+  "banners": [
+    {
+      "banner_id": 5,
+      "title": "Summer Sale",
+      "image": "https://example.com/image/cache/banner1-1140x380.png",
+      "link": "index.php?route=product/category&path=20"
+    }
+  ],
+  "promotions": [
+    {
+      "promotion_id": 12,
+      "title": "VIP Discount",
+      "description": "Exclusive 20% off for VIP members",
+      "type": "cart_discount",
+      "visual_type": "banner",
+      "discount_type": "percent",
+      "discount_value": 20.0,
+      "code": "VIP2024",
+      "visuals": [
+        {
+          "type": "image",
+          "image": "https://example.com/image/cache/promo-banner-1140x380.png",
+          "link": "index.php?route=checkout/cart"
+        }
+      ]
+    }
+  ]
+}
+```
 
 #### 2. Save FCM Token
 Registers a Firebase token for push notifications.

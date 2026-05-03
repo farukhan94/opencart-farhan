@@ -248,12 +248,78 @@ class ModelExtensionModuleCustomerSegment extends Model
         $query = $this->db->query("SELECT p.* FROM `" . DB_PREFIX . "customer_segment_promotion` p JOIN `" . DB_PREFIX . "customer_segment_promotion_group` pg ON (p.promotion_id = pg.promotion_id) WHERE pg.customer_group_id = '" . (int) $customer_group_id . "' AND p.status = '1' ORDER BY p.promotion_id ASC");
         
         $promotions = array();
+        $this->load->model('tool/image');
+        
         foreach ($query->rows as $row) {
             if ($this->isPromotionActive($row)) {
-                $promotions[] = $row;
+                $processed = array(
+                    'promotion_id'   => $row['promotion_id'],
+                    'title'          => $row['title'],
+                    'description'    => $row['description'],
+                    'type'           => $row['type'],
+                    'visual_type'    => $row['visual_type'],
+                    'discount_type'  => $row['discount_type'],
+                    'discount_value' => (float)$row['discount_value'],
+                    'code'           => $row['code'],
+                    'visuals'        => array()
+                );
+
+                // 1. Process Visuals
+                if ($row['visual_type'] == 'banner' && !empty($row['banner_data'])) {
+                    $banner_data = json_decode($row['banner_data'], true);
+                    if (is_array($banner_data)) {
+                        foreach ($banner_data as $b) {
+                            if (!empty($b['image']) && is_file(DIR_IMAGE . $b['image'])) {
+                                $processed['visuals'][] = array(
+                                    'type'  => 'image',
+                                    'image' => $this->model_tool_image->resize($b['image'], 1140, 380),
+                                    'link'  => $b['link']
+                                );
+                            }
+                        }
+                    }
+                } elseif ($row['visual_type'] == 'product_slider' && !empty($row['product_ids'])) {
+                    $product_ids = explode(',', $row['product_ids']);
+                    $processed['visuals'] = $this->getDetailedProducts($product_ids);
+                }
+
+                // 2. Process Scope Details
+                if ($row['scope'] == 'specific_products' && !empty($row['product_ids'])) {
+                    $processed['target_products'] = explode(',', $row['product_ids']);
+                } elseif ($row['scope'] == 'specific_categories' && !empty($row['category_ids'])) {
+                    $processed['target_categories'] = explode(',', $row['category_ids']);
+                }
+
+                $promotions[] = $processed;
             }
         }
         return $promotions;
+    }
+
+    private function getDetailedProducts($product_ids) {
+        $products = array();
+        $this->load->model('catalog/product');
+        $this->load->model('tool/image');
+
+        foreach ($product_ids as $product_id) {
+            $product_info = $this->model_catalog_product->getProduct($product_id);
+            if ($product_info) {
+                if ($product_info['image'] && is_file(DIR_IMAGE . $product_info['image'])) {
+                    $image = $this->model_tool_image->resize($product_info['image'], 200, 200);
+                } else {
+                    $image = $this->model_tool_image->resize('placeholder.png', 200, 200);
+                }
+
+                $products[] = array(
+                    'product_id' => $product_info['product_id'],
+                    'name'       => $product_info['name'],
+                    'price'      => $this->currency->format($this->tax->calculate($product_info['price'], $product_info['tax_class_id'], $this->config->get('config_tax')), $this->session->data['currency']),
+                    'image'      => $image,
+                    'href'       => $this->url->link('product/product', 'product_id=' . $product_info['product_id'])
+                );
+            }
+        }
+        return $products;
     }
 
 
